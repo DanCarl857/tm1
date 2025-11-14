@@ -6,13 +6,16 @@ export class Log {
     id: string;
 
     @Column()
-    actorID: string;
+    actorEmail: string;
 
     @Column()
     action: string;
 
-    @Column({ type: 'json', nullable: true })
-    meta: any;
+    @Column({ type: 'text', nullable: true })
+    details: string;
+
+    @Column({ nullable: true })
+    target: string;
 
     @CreateDateColumn()
     createdAt: Date;

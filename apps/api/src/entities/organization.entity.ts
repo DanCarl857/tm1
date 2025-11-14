@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Membership } from './membership.entity';
 import { Task } from './task.entity';
+import { UserOrganizationRole } from './user-organization-role.entity';
 
 @Entity()
 export class Organization {
@@ -10,8 +10,8 @@ export class Organization {
     @Column({ unique: true })
     name: string;
 
-    @OneToMany(() => Membership, (membership) => membership.organization)
-    memberships: Membership[];
+    @OneToMany(() => UserOrganizationRole, (userOrgRole) => userOrgRole.organization)
+    userRoles: UserOrganizationRole[];
 
     @OneToMany(() => Task, (task) => task.organization)
     tasks: Task[];
