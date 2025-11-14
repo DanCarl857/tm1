@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Put } from '@nestjs/common';
+import { Controller, Req, Post, Body, UseGuards, Get, Param, Put, Delete } from '@nestjs/common';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { UsersService } from './users.service';
 import { CurrentUser } from '../common/user.decorator';
@@ -9,22 +9,36 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Post()
-  async create(@Body() body: any, @CurrentUser() user) {
-    // actor.isGlobalAdmin check:
-    const isGlobalAdmin = user?.email === (process.env.SEED_ADMIN_EMAIL ?? 'admin@local');
-    return this.usersService.createUser({ userId: user.userId, isGlobalAdmin }, body);
+  async create(@Req() req: any, @Body() body: { email: string; password: string; name: string, orgId?: string; role?: string }) {
+    const actorEmail = req.user?.email;
+    return this.usersService.createUser(actorEmail, body);
   }
 
-  @Put(':id/membership')
-  async updateMembership(@Param('id') id: string, @Body() body: { orgId: string, roles: string[] }, @CurrentUser() user) {
-    const isGlobalAdmin = user?.email === (process.env.SEED_ADMIN_EMAIL ?? 'admin@local');
-    // We should verify caller is org-admin in that org or global admin. For brevity: allow global admin only or org-admin membership.
-    // Ideally you'd fetch caller membership and check 'org-admin' role. Skipping for brevity; check in production.
-    return this.usersService.updateMembership({ userId: user.userId, isGlobalAdmin }, id, body.orgId, body.roles);
+  @Put(':id/password')
+  async updatePassword(@Req() req: any, @Param('id') id: string, @Body() body: { newPassword: string }) {
+    const actorEmail = req.user?.email;
+    return this.usersService.updatePassword(actorEmail, id, body.newPassword);
   }
 
   @Get(':id')
-  async get(@Param('id') id: string) {
-    return this.usersService.findById(id);
+  async getUser(@Param('id') id: string) {
+    return this.usersService.getUserById(id);
+  }
+
+  @Get(':id/roles')
+  async getRoles(@Param('id') id: string) {
+    return this.usersService.getUserRoles(id);
+  }
+
+  @Get('org/:orgId')
+  async listUsersInOrganization(@Req() req: any, @Param('orgId') orgId: string) {
+    const actorEmail = req.user?.email;
+    return this.usersService.listUsersInOrganization(actorEmail, orgId);
+  }
+
+  @Delete(':id')
+  async deleteUser(@Req() req: any, @Param('id') id: string) {
+    const actorEmail = req.user?.email;
+    return this.usersService.deleteUser(actorEmail, id);
   }
 }

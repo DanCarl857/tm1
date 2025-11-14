@@ -12,6 +12,9 @@ export class User {
     email: string;
 
     @Column()
+    name: string;
+
+    @Column()
     password: string;
 
     @OneToMany(() => UserOrganizationRole, (userOrgRole) => userOrgRole.user)

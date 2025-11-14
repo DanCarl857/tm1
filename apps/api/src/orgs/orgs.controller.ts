@@ -1,43 +1,52 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Put, Delete } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req, Get, Param, Put, Delete } from '@nestjs/common';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { OrgsService } from './orgs.service';
-import { CurrentUser } from '../common/user.decorator';
+import { Role } from '../entities/user-organization-role.entity';
 
-@Controller('orgs')
+@Controller('organizations')
 @UseGuards(JwtAuthGuard)
 export class OrgsController {
-  constructor(private orgs: OrgsService) {}
+  constructor(private orgsService: OrgsService) {}
 
   @Post()
-  async create(@Body() body: { name: string }, @CurrentUser() user) {
-    // only global admin (email admin@local) may create orgs; simple check
-    const isGlobalAdmin = user?.email === (process.env.SEED_ADMIN_EMAIL ?? 'admin@local');
-    if (!isGlobalAdmin) throw new Error('Only global admin can create orgs');
-    return this.orgs.createOrg(body.name, user);
+  async create(@Req() req: any, @Body() body: { name: string }) {
+    const actorEmail = req.user.email;
+    const created = await this.orgsService.createOrg(actorEmail, body.name);
+    return created;
   }
 
-  @Get()
-  async myOrgs(@CurrentUser() user) {
-    return this.orgs.findAllForUser(user.userId);
+  @Get('me')
+  async myOrganizations(@Req() req: any) {
+    const userId = req.user?.userId;
+    return this.orgsService.listOrganizationForUser(userId);
   }
 
   @Get(':id')
   async get(@Param('id') id: string) {
-    return this.orgs.findOne(id);
+    return this.orgsService.getOrganization(id)
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: { name?: string }, @CurrentUser() user) {
-    // only global admin in this simple implementation:
-    const isGlobalAdmin = user?.email === (process.env.SEED_ADMIN_EMAIL ?? 'admin@local');
-    if (!isGlobalAdmin) throw new Error('Only global admin can update orgs');
-    return this.orgs.updateOrg(id, body.name);
+  async update(@Req() req: any, @Param('id') id: string, @Body() body: { name: string }) {
+    const actorEmail = req.user.email;
+    return this.orgsService.updateOrganization(actorEmail, id, body.name);
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string, @CurrentUser() user) {
-    const isGlobalAdmin = user?.email === (process.env.SEED_ADMIN_EMAIL ?? 'admin@local');
-    if (!isGlobalAdmin) throw new Error('Only global admin can delete orgs');
-    return this.orgs.removeOrg(id);
+  async delete(@Req() req: any, @Param('id') id: string) {
+    const actorEmail = req.user.email;
+    return this.orgsService.deleteOrganization(actorEmail, id);
+  }
+
+  @Post(':id/roles')
+  async assignRole(@Req() req: any, @Param('id') id: string, @Body() body: { userEmail: string; role: string }) {
+    const actorEmail = req.user?.email;
+    return this.orgsService.addOrUpdateUserRole(actorEmail, id, body.userEmail, body.role as Role);
+  }
+
+  @Delete(':id/roles/:userId')
+  async removeRole(@Req() req: any, @Param('id') id: string, @Param('userId') userId: string) {
+    const actorEmail = req.user?.email;
+    return this.orgsService.removeUserRole(actorEmail, id, userId);
   }
 }
