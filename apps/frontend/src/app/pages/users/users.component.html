@@ -9,10 +9,10 @@
   <table class="min-w-full table-auto border">
     <thead>
       <tr class="bg-gray-200">
-        <th class="px-4 py-2">Name</th>
-        <th class="px-4 py-2">Email</th>
-        <th class="px-4 py-2">Roles</th>
-        <th class="px-4 py-2">Actions</th>
+  <th class="px-4 py-2 text-left">Name</th>
+  <th class="px-4 py-2 text-left">Email</th>
+  <th class="px-4 py-2 text-left">Roles</th>
+  <th class="px-4 py-2 text-left">Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -26,14 +26,20 @@
           <div class="flex gap-2">
             <button *ngIf="canCreateUser()" 
                     (click)="openModal(u)" 
-                    class="bg-blue-500 text-white px-2 py-1 rounded">
-              Edit
+                    class="bg-blue-500 text-white px-2 py-1 rounded"
+                    aria-label="Edit user" title="Edit">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M4 20h4l11-11-4-4L4 16v4z" />
+              </svg>
             </button>
 
             <button *ngIf="canCreateUser()" 
                     (click)="deleteUser(u.id)" 
-                    class="bg-red-500 text-white px-2 py-1 rounded">
-              Delete
+                    class="bg-red-500 text-white px-2 py-1 rounded"
+                    aria-label="Delete user" title="Delete">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862A2 2 0 0 1 5.995 19.142L5 7m5 4v6m4-6v6M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+              </svg>
             </button>
           </div>
         </td>
