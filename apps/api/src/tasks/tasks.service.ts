@@ -1,102 +1,165 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { Task } from '../entities/task.entity';
 import { User } from '../entities/user.entity';
-import { Membership } from '../entities/membership.entity';
 import { Organization } from '../entities/organization.entity';
+import { UserOrganizationRole } from '../entities/user-organization-role.entity';
+import { LogsService } from '../logs/logs.service';
 
 @Injectable()
 export class TasksService {
   constructor(
     @InjectRepository(Task) private taskRepo: Repository<Task>,
     @InjectRepository(User) private userRepo: Repository<User>,
-    @InjectRepository(Membership) private memRepo: Repository<Membership>,
     @InjectRepository(Organization) private orgRepo: Repository<Organization>,
+    @InjectRepository(UserOrganizationRole) private userOrgRoleRepo: Repository<UserOrganizationRole>,
+    private logsService: LogsService,
   ) {}
 
-  // helper: get roles of caller within org
-  async getRoles(userId: string, orgId: string) {
-    const mem = await this.memRepo.findOne({ where: { user: { id: userId }, organization: { id: orgId } }});
-    return mem?.roles ?? [];
+  private isGlobalAdmin(email: string): boolean {
+    const seed = process.env.SEED_ADMIN_EMAILS || 'admin@system.com';
+    return email === seed;
   }
 
-  async createTask(actor: { userId: string, isGlobalAdmin: boolean}, dto: { title: string, description?: string, organizationId: string, assigneeIds?: string[] }) {
-    // Only global admin, org-admin, or admin in the org can create tasks
-    const roles = await this.getRoles(actor.userId, dto.organizationId);
-    if (!actor.isGlobalAdmin && !roles.includes('admin') && !roles.includes('org-admin')) {
-      throw new ForbiddenException('Not allowed to create tasks in this org');
+  private async getActorRoleInOrg(actorEmail: string, orgId: string) {
+    const actor = await this.userRepo.findOne({ where: { email: actorEmail } });
+    if (!actor) {
+      throw new NotFoundException('Actor user not found');
     }
 
-    const org = await this.orgRepo.findOne({ where: { id: dto.organizationId }});
-    if (!org) throw new NotFoundException('Org not found');
+    const userOrgRole = await this.userOrgRoleRepo.findOne({
+      where: { user: { id: actor.id }, organization: { id: orgId } },
+      relations: ['role'],
+    });
 
-    const task = this.taskRepo.create({ title: dto.title, description: dto.description, organization: org, createdBy: await this.userRepo.findOne({ where: { id: actor.userId }}) });
-    if (dto.assigneeIds && dto.assigneeIds.length) {
-      task.assignees = await this.userRepo.findByIds(dto.assigneeIds);
-    } else {
-      task.assignees = [];
+    return userOrgRole ? userOrgRole.role : null;
+  }
+
+  async createTask(actorEmail: string, orgId: string, dto: Partial<Task>) {
+    const org = await this.orgRepo.findOne({ where: { id: orgId } });
+    if (!org) throw new NotFoundException('Organization not found');
+
+    const actorIsGlobal = this.isGlobalAdmin(actorEmail);
+    const actorRole = await this.getActorRoleInOrg(actorEmail, orgId);
+
+    if (!actorIsGlobal && actorRole !== 'admin' && actorRole !== 'org-admin') {
+      throw new ForbiddenException('Insufficient permissions to create task');
     }
-    return this.taskRepo.save(task);
+    
+    const task = this.taskRepo.create({ title: dto.title, description: dto.description ?? '', organization: org, completed: false });
+    if (dto.assignees && dto.assignees.length > 0) {
+      const assignees = await this.userRepo.findByIds(dto.assignees.map(a => a.id));
+      task.assignees = assignees;
+    }
+
+    const actor = await this.userRepo.findOne({ where: { email: actorEmail } });
+    task.createdBy = actor || null;
+
+    const savedTask = await this.taskRepo.save(task);
+
+    await this.logsService.record(actorEmail, `Created task '${savedTask.title}' in organization '${org.name}'`);
+    await this.taskRepo.save(task);
+    return savedTask
   }
 
-  async findForUser(userId: string) {
-    // return tasks for orgs the user is a member of; viewers included if they are a member.
-    const memberships = await this.memRepo.find({ where: { user: { id: userId } }, relations: ['organization'] });
-    const orgIds = memberships.map(m => m.organization.id);
-    if (orgIds.length === 0) return [];
-    return this.taskRepo.createQueryBuilder('t')
-      .where('t.organizationId IN (:...orgIds)', { orgIds })
-      .leftJoinAndSelect('t.assignees', 'assignees')
-      .getMany();
+  async listTasksForUser(actorEmail: string) {
+    const actor = await this.userRepo.findOne({ where: { email: actorEmail }, relations: ['orgRoles'] });
+    if (!actor) throw new NotFoundException('Actor not found');
+
+    const userOrgRole = await this.userOrgRoleRepo.find({
+      where: { user: { id: actor.id } },
+      relations: ['organization'],
+    });
+
+    const orgIds = userOrgRole.map(uor => uor.organization.id);
+
+    const tasks = await this.taskRepo.find({
+      where: { organization: { id: Not(orgIds.length > 0 ? '' : 'non-existent-id') } },
+      relations: ['organization', 'assignees', 'createdBy'],
+    });
+
+    return tasks;
   }
 
-  async findOne(userId: string, taskId: string) {
-    const t = await this.taskRepo.findOne({ where: { id: taskId }});
-    if (!t) throw new NotFoundException();
-    // ensure user is a member of the org (or global admin)
-    const mem = await this.memRepo.findOne({ where: { user: { id: userId }, organization: { id: t.organization.id } }});
-    if (!mem) throw new ForbiddenException('Not a member of the organization');
-    return t;
-  }
-
-  async updateTask(actor: { userId: string, isGlobalAdmin: boolean }, taskId: string, dto: { title?: string, description?: string, completed?: boolean, assigneeIds?: string[] }) {
-    const task = await this.taskRepo.findOne({ where: { id: taskId }});
+  async getTask(actorEmail: string, taskId: string) {
+    const task = await this.taskRepo.findOne({
+      where: { id: taskId },
+      relations: ['organization', 'assignees', 'createdBy'],
+    });
     if (!task) throw new NotFoundException('Task not found');
 
-    const roles = await this.getRoles(actor.userId, task.organization.id);
+    const actorIsGlobal = this.isGlobalAdmin(actorEmail);
+    const actorRole = await this.getActorRoleInOrg(actorEmail, task.organization.id);
 
-    // Admins and org-admins can update freely
-    if (actor.isGlobalAdmin || roles.includes('admin') || roles.includes('org-admin')) {
-      task.title = dto.title ?? task.title;
-      task.description = dto.description ?? task.description;
-      if (dto.assigneeIds) {
-        task.assignees = await this.userRepo.findByIds(dto.assigneeIds);
+    if (!actorIsGlobal && !actorRole) {
+      throw new ForbiddenException('Insufficient permissions to view task');
+    }
+
+    await this.logsService.record(actorEmail, `Viewed task '${task.title}' in organization '${task.organization.name}'`);
+    return task;
+  }
+
+  async updateTask(actorEmail: string, taskId: string, dto: Partial<Task>) {
+    const task = await this.taskRepo.findOne({
+      where: { id: taskId },
+      relations: ['organization', 'assignees', 'createdBy'],
+    });
+    if (!task) throw new NotFoundException('Task not found');
+
+    const actorIsGlobal = this.isGlobalAdmin(actorEmail);
+    const actorRole = await this.getActorRoleInOrg(actorEmail, task.organization.id);
+
+    // Admins/org-admins can update all fields
+    if (actorIsGlobal || actorRole === 'admin' || actorRole === 'org-admin') {
+      if (dto.title !== undefined) task.title = dto.title;
+      if (dto.description !== undefined) task.description = dto.description;
+      if (dto.completed !== undefined) task.completed = dto.completed;
+      if (dto.assignees !== undefined) {
+        const assignees = await this.userRepo.findByIds(dto.assignees.map(a => a.id));
+        task.assignees = assignees;
       }
-      if (typeof dto.completed === 'boolean') task.completed = dto.completed;
-      return this.taskRepo.save(task);
+
+      const updatedTask = await this.taskRepo.save(task);
+
+      await this.logsService.record(actorEmail, 'update_task', `Updated task '${updatedTask.title}' in organization '${task.organization.name}'`);
+      return updatedTask;
     }
 
-    // Users can update only if they are assignees and the change is allowed (title/description? requirement: user role can update task in an org and mark as complete)
-    const isAssignee = task.assignees.some(a => a.id === actor.userId);
-    if (roles.includes('user') && isAssignee) {
-      // allow marking complete and editing description/title if you want; we'll allow description and completed
-      if (dto.title) task.title = dto.title;
-      if (dto.description) task.description = dto.description;
-      if (typeof dto.completed === 'boolean') task.completed = dto.completed;
-      return this.taskRepo.save(task);
+    if (actorRole === 'user') {
+      // Regular users can only update the 'completed' status
+      if (dto.completed !== undefined) {
+        task.completed = dto.completed;
+        const updatedTask = await this.taskRepo.save(task);
+
+        await this.logsService.record(actorEmail, 'complete_task', `Completed task '${updatedTask.title}' in organization '${task.organization.name}'`);
+        return updatedTask;
+      } else {
+        throw new ForbiddenException('Insufficient permissions to update this field');
+      }
     }
 
-    throw new ForbiddenException('Not allowed to update this task');
+    // Viewers cannot update tasks
+    throw new ForbiddenException('Insufficient permissions to update task');
   }
 
-  async removeTask(actor: { userId: string, isGlobalAdmin: boolean }, taskId: string) {
-    const task = await this.taskRepo.findOne({ where: { id: taskId }});
-    if (!task) throw new NotFoundException();
-    const roles = await this.getRoles(actor.userId, task.organization.id);
-    if (actor.isGlobalAdmin || roles.includes('admin') || roles.includes('org-admin')) {
-      return this.taskRepo.remove(task);
+  async deleteTask(actorEmail: string, taskId: string) {
+    const task = await this.taskRepo.findOne({
+      where: { id: taskId },
+      relations: ['organization'],
+    });
+    if (!task) throw new NotFoundException('Task not found');
+
+    const actorIsGlobal = this.isGlobalAdmin(actorEmail);
+    const actorRole = await this.getActorRoleInOrg(actorEmail, task.organization.id);
+
+    if (!actorIsGlobal && actorRole !== 'admin' && actorRole !== 'org-admin') {
+      throw new ForbiddenException('Insufficient permissions to delete task');
     }
-    throw new ForbiddenException('Not allowed to delete this task');
+
+    await this.taskRepo.remove(task);
+    await this.logsService.record(actorEmail, 'delete_task', `Deleted task '${task.title}' from organization '${task.organization.name}'`);
+    return { message: 'Task deleted successfully' };
   }
+
 }

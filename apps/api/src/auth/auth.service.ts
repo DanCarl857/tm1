@@ -4,14 +4,13 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../entities/user.entity';
-import { Membership, OrgRole } from '../entities/membership.entity';
+// import { Membership, OrgRole } from '../entities/membership.entity';
 import { Organization } from '../entities/organization.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User) private users: Repository<User>,
-    @InjectRepository(Membership) private memberships: Repository<Membership>,
     @InjectRepository(Organization) private orgRepo: Repository<Organization>,
     private jwt: JwtService
   ) {}
@@ -35,15 +34,24 @@ export class AuthService {
   }
 
   async login(user: User) {
-    const payload = { sub: user.id, email: user.email };
-    return { access_token: this.jwt.sign(payload) };
+    const payload = { email: user.email, sub: user.id, roles: user.orgRoles };
+    const accessToken = this.jwt.sign(payload);
+    return { 
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        roles: user.orgRoles
+      }
+    };
   }
 
   // helper: attach membership when creating user into an org
-  async addMembership(user: User, orgId: string, roles: OrgRole[] = []) {
-    const org = await this.orgRepo.findOne({ where: { id: orgId } });
-    if (!org) throw new Error('Organization not found');
-    const mem = this.memberships.create({ user, organization: org, roles });
-    return this.memberships.save(mem);
-  }
+  // async addMembership(user: User, orgId: string, roles: OrgRole[] = []) {
+  //   const org = await this.orgRepo.findOne({ where: { id: orgId } });
+  //   if (!org) throw new Error('Organization not found');
+  //   const mem = this.memberships.create({ user, organization: org, roles });
+  //   return this.memberships.save(mem);
+  // }
 }

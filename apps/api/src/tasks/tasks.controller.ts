@@ -1,39 +1,50 @@
-import { Controller, UseGuards, Post, Body, Get, Param, Put, Delete } from '@nestjs/common';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { Controller, UseGuards, Req, Post, Body, Get, Param, Put, Delete } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TasksService } from './tasks.service';
-import { CurrentUser } from '../common/user.decorator';
 
 @Controller('tasks')
 @UseGuards(JwtAuthGuard)
 export class TasksController {
-  constructor(private tasks: TasksService) {}
+  constructor(private tasksService: TasksService) {}
 
   @Post()
-  async create(@Body() body: any, @CurrentUser() user) {
-    const seedAdminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@local';
-    const isGlobalAdmin = user?.email === seedAdminEmail;
-    return this.tasks.createTask({ userId: user.userId, isGlobalAdmin }, body);
+  async create(@Req() req: any, @Body() body: { title: string; description?: string; organizationId: number; assigneeId?: number }) {
+    const actorEmail = req.user?.email;
+    const orgId = String(body.organizationId);
+
+    const dto: any = {
+      title: body.title,
+      description: body.description,
+    };
+
+    if (body.assigneeId !== undefined && body.assigneeId !== null) {
+      dto.assignees = [{ id: body.assigneeId }];
+    }
+
+    return this.tasksService.createTask(actorEmail, orgId, dto);
   }
 
   @Get()
-  async list(@CurrentUser() user) {
-    return this.tasks.findForUser(user.userId);
+  async list(@Req() req: any) {
+    const actorEmail = req.user?.email;
+    return this.tasksService.listTasksForUser(actorEmail);
   }
 
   @Get(':id')
-  async getOne(@Param('id') id: string, @CurrentUser() user) {
-    return this.tasks.findOne(user.userId, id);
+  async get(@Req() req: any, @Param('id') id: string) {
+    const actorEmail = req.user?.email;
+    return this.tasksService.getTask(actorEmail, id);
   }
+
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: any, @CurrentUser() user) {
-    const seedAdminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@local';
-    const isGlobalAdmin = user?.email === seedAdminEmail;
-    return this.tasks.updateTask({ userId: user.userId, isGlobalAdmin }, id, body);
+  async update(@Req() req: any, @Param('id') id: string, @Body() body: { title?: string; description?: string; completed?: boolean; assigneeId?: number }) {
+    const actorEmail = req.user?.email;
+    return this.tasksService.updateTask(actorEmail, id, body);
   }
+
   @Delete(':id')
-  async delete(@Param('id') id: string, @CurrentUser() user) {
-    const seedAdminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@local';
-    const isGlobalAdmin = user?.email === seedAdminEmail;
-    return this.tasks.removeTask({ userId: user.userId, isGlobalAdmin }, id);
+  async remove(@Req() req: any, @Param('id') id: string) {
+    const actorEmail = req.user?.email;
+    return this.tasksService.deleteTask(actorEmail, id);
   }
 }

@@ -8,10 +8,10 @@ import * as bcrypt from 'bcrypt';
 
 async function seedAdmin() {
   const repo = getRepository(User);
-  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@local';
+  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@system.com';
   const existing = await repo.findOne({ where: { email: adminEmail }});
   if (!existing) {
-    const hash = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD || 'adminpassword', 10);
+    const hash = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD || 'Admin123', 10);
     await repo.save({ email: adminEmail, passwordHash: hash });
     console.log('Seeded admin user:', adminEmail);
   }
@@ -19,10 +19,11 @@ async function seedAdmin() {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  await app.init();
 
   const config = new DocumentBuilder()
-    .setTitle('API Documentation')
-    .setDescription('The API description')
+    .setTitle('TM API Documentation')
+    .setDescription('Task manager API docs')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

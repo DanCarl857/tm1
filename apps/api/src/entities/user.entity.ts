@@ -1,5 +1,4 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Membership } from './membership.entity';
 import { Task } from './task.entity';
 import { UserOrganizationRole } from './user-organization-role.entity';
 
