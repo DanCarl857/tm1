@@ -12,6 +12,12 @@
         <input id="email" type="email" formControlName="email" class="w-full border px-3 py-2 rounded"/>
       </div>
 
+      <div class="mb-4" *ngIf="!user">
+        <label for="password" class="block mb-1">Password</label>
+        <input id="password" type="password" formControlName="password" class="w-full border px-3 py-2 rounded"/>
+        <p class="text-xs text-gray-500 mt-1">Minimum 6 characters.</p>
+      </div>
+
       <div class="mb-4">
         <label for="roles" class="block mb-1">Roles</label>
         <select id="roles" multiple formControlName="roles" class="w-full border px-3 py-2 rounded">
@@ -20,7 +26,7 @@
       </div>
 
       <div class="flex justify-end space-x-2">
-        <button type="button" (click)="closed.emit()" class="px-4 py-2 rounded border">Cancel</button>
+  <button type="button" (click)="close.emit()" class="px-4 py-2 rounded border">Cancel</button>
         <button type="submit" class="px-4 py-2 rounded bg-blue-500 text-white">{{ user ? 'Save' : 'Add' }}</button>
       </div>
     </form>

@@ -26,6 +26,19 @@ export class OrganizationsComponent implements OnInit {
     this.loadOrganizations();
   }
 
+  // Check if the current user has an admin role in any shape
+  isAdminAny(): boolean {
+    const u = this.user;
+    if (!u || !u.roles) return false;
+    return u.roles.some((r: any) => {
+      if (!r) return false;
+      if (typeof r === 'string') return r === 'admin';
+      if (Array.isArray(r.roles)) return r.roles.includes('admin');
+      if (typeof r.role === 'string') return r.role === 'admin';
+      return false;
+    });
+  }
+
   openModal(org: any = null) {
     this.editOrg = org;
     this.showModal = true;

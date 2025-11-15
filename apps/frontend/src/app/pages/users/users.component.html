@@ -1,6 +1,6 @@
 <div class="p-4">
   <h1 class="text-2xl font-bold mb-4">Users</h1>
-  <button *ngIf="user?.roles.includes('admin') || user?.roles.includes('org-admin')"
+  <button *ngIf="canCreateUser()"
           class="bg-green-500 text-white px-4 py-2 rounded mb-4"
           (click)="openModal()">
     Add New User
@@ -23,11 +23,19 @@
           <span *ngFor="let r of u.roles" class="bg-gray-300 text-gray-800 px-2 py-1 rounded mr-1">{{ r }}</span>
         </td>
         <td class="px-4 py-2">
-          <button *ngIf="user?.roles.includes('admin') || user?.roles.includes('org-admin')" 
-                  (click)="deleteUser(u.id)" 
-                  class="bg-red-500 text-white px-2 py-1 rounded">
-            Delete
-          </button>
+          <div class="flex gap-2">
+            <button *ngIf="canCreateUser()" 
+                    (click)="openModal(u)" 
+                    class="bg-blue-500 text-white px-2 py-1 rounded">
+              Edit
+            </button>
+
+            <button *ngIf="canCreateUser()" 
+                    (click)="deleteUser(u.id)" 
+                    class="bg-red-500 text-white px-2 py-1 rounded">
+              Delete
+            </button>
+          </div>
         </td>
       </tr>
     </tbody>

@@ -34,7 +34,7 @@ export class AppComponent {
   }
 
   get isLoginRoute() {
-    return this.router.url === '/' || this.router.url.startsWith('/login');
+    return this.router.url === '/' || this.router.url.startsWith('/login') || this.router.url.startsWith('/select-org');
   }
 
   logout() {

@@ -5,10 +5,12 @@ import { LoginComponent } from './components/login/login.component';
 import { OrganizationsComponent } from './pages/organizations/organizations.component';
 import { UsersComponent } from './pages/users/users.component';
 import { LogsComponent } from './pages/logs/logs.component';
+import { SelectOrgComponent } from './pages/select-org/select-org.component';
 
 export const routes: Routes = [
-  { path: '', component: LoginComponent },
+  { path: '', redirectTo: 'select-org', pathMatch: 'full' },
   { path: 'dashboard', component: DashboardComponent },
+  { path: 'select-org', component: SelectOrgComponent },
   { path: 'organizations', component: OrganizationsComponent },
   { path: 'users/org/:orgId', component: UsersComponent },
   { path: 'users', component: UsersComponent },

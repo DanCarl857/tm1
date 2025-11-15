@@ -18,9 +18,10 @@ export interface User {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private api = 'http://localhost:3000';
+  private api = 'http://localhost:3000/api';
   private tokenKey = 'jwt_token';
   user$ = new BehaviorSubject<User | null>(null);
+  selectedOrg$ = new BehaviorSubject<{ id: string; name: string } | null>(null);
 
   constructor(private http: HttpClient) {}
 
@@ -56,8 +57,20 @@ export class AuthService {
   }
 
   logout() {
-    localStorage.removeItem(this.tokenKey);
+    // Clear all local storage to remove tokens and any selected orgs
+    try {
+      localStorage.clear();
+    } catch (e) {
+      // Fallback: remove known keys
+      localStorage.removeItem(this.tokenKey);
+      try { localStorage.removeItem('selected_org_id'); } catch { console.log('Failed to remove selected_org_id from localStorage'); }
+    }
     this.user$.next(null);
+    this.selectedOrg$.next(null);
+  }
+
+  setSelectedOrg(org: { id: string; name: string } | null) {
+    this.selectedOrg$.next(org);
   }
 
   get token() {

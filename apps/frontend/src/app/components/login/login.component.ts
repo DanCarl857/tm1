@@ -24,9 +24,17 @@ export class LoginComponent {
     this.loading = true;
     this.error = '';
     this.auth.login(this.email, this.password).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.loading = false;
-        this.router.navigate(['/dashboard']); // Redirect to dashboard
+        console.log(res);
+        // Ensure accessToken is persisted (AuthService also stores it, but be explicit)
+        try {
+          if (res?.accessToken) localStorage.setItem('jwt_token', res.accessToken);
+        } catch {
+          console.log('Failed to store token in localStorage');
+        }
+        // After successful login, send user to organization selection first
+        this.router.navigate(['/select-org']);
       },
       error: (err) => {
         this.loading = false;

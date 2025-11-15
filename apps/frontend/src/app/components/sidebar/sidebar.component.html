@@ -2,18 +2,14 @@
   <h2 class="text-lg font-bold mb-4">Dashboard</h2>
   <ul>
     <li><a routerLink="/dashboard" class="sidebar-link">Dashboard</a></li>
-    <li *ngIf="isAdmin">
-      <a routerLink="/users" class="sidebar-link">Users</a>
+    <!-- Show Users when user is admin/org-admin for the selected organization -->
+    <li *ngIf="selectedOrgId && (isAdminForSelectedOrg || isOrgAdminForSelectedOrg)">
+      <a [routerLink]="['/users/org', selectedOrgId]" class="sidebar-link">Users</a>
     </li>
-    <li *ngIf="isOrgAdmin && !isAdmin">
-      <div class="px-3 text-xs text-gray-400 uppercase">Users (org-admin)</div>
-      <ul>
-        <li *ngFor="let org of orgsWhereUserIsOrgAdmin">
-          <a [routerLink]="['/users/org', org.id]" class="sidebar-link">{{ org.name }}</a>
-        </li>
-      </ul>
-    </li>
-    <li *ngIf="isAdmin">
+    <!-- <li *ngIf="selectedOrgId">
+      <a routerLink="/tasks" class="sidebar-link">Tasks</a>
+    </li> -->
+    <li *ngIf="selectedOrgId && (isAdminForSelectedOrg || isOrgAdminForSelectedOrg)">
       <a routerLink="/logs" class="sidebar-link">Logs</a>
     </li>
 
@@ -24,6 +20,9 @@
           <a [routerLink]="['/organizations', org.id]" class="sidebar-link">{{ org.name }}</a>
         </li>
       </ul>
+    </li>
+    <li *ngIf="selectedOrgId" class="mt-4">
+      <button (click)="changeOrg()" class="sidebar-link">Change organization</button>
     </li>
     <li>
       <button (click)="logout()" class="sidebar-link logout-btn">Logout</button>

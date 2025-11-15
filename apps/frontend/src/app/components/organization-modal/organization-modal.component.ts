@@ -1,3 +1,4 @@
+/* eslint-disable @angular-eslint/no-output-native */
 /* eslint-disable @angular-eslint/prefer-inject */
 import { Component, Input, Output, EventEmitter, OnChanges } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -13,7 +14,7 @@ import { CommonModule } from '@angular/common';
 export class OrganizationModalComponent implements OnChanges {
   @Input() organization: any = null;
   @Input() show = false;
-  @Output() closed = new EventEmitter<void>();
+  @Output() close = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
   orgForm: FormGroup;
@@ -37,17 +38,17 @@ export class OrganizationModalComponent implements OnChanges {
 
     const payload = this.orgForm.value;
 
-    if (this.organization) {
+      if (this.organization) {
       // Edit
       this.orgService.updateOrganization(this.organization.id, payload).subscribe(() => {
         this.saved.emit();
-        this.closed.emit();
+        this.close.emit();
       });
     } else {
       // Add
       this.orgService.createOrganization(payload).subscribe(() => {
         this.saved.emit();
-        this.closed.emit();
+        this.close.emit();
       });
     }
   }

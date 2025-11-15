@@ -2,7 +2,7 @@
   <h1 class="text-2xl font-bold mb-4">Tasks</h1>
 
   <!-- Add Task button (Admins & Org-admins) -->
-  <button *ngIf="user?.roles.includes('admin') || user?.roles.includes('org-admin')"
+  <button *ngIf="canCreateTask()"
           (click)="openModal(null, selectedOrgId)"
           class="bg-green-500 text-white px-4 py-2 rounded mb-4">
     Add Task
@@ -28,7 +28,7 @@
         <td class="px-4 py-2">{{ t.status }}</td>
         <td class="px-4 py-2 flex space-x-2">
           <!-- Edit button for Admin/Org-admin, or task owner -->
-          <button *ngIf="user?.roles.includes('admin') || user?.roles.includes('org-admin') || isAssignedTo(t)"
+          <button *ngIf="canCreateTask() || isAssignedTo(t)"
                   (click)="openModal(t)"
                   class="bg-yellow-500 text-white px-2 py-1 rounded">
             Edit
@@ -42,7 +42,7 @@
           </button>
 
           <!-- Delete button for Admin/Org-admin -->
-          <button *ngIf="user?.roles.includes('admin') || user?.roles.includes('org-admin')"
+          <button *ngIf="canCreateTask()"
                   (click)="deleteTask(t.id)"
                   class="bg-red-500 text-white px-2 py-1 rounded">
             Delete

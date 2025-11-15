@@ -30,14 +30,38 @@ export class UsersComponent implements OnInit {
     });
   }
 
+  canCreateUser(): boolean {
+    const u = this.user;
+    const sel = this.orgId ?? localStorage.getItem('selected_org_id');
+    if (!u || !u.roles) return false;
+    const isAdminAnywhere = u.roles.some((r: any) => {
+      if (!r) return false;
+      if (typeof r === 'string') return r === 'admin';
+      if (Array.isArray(r.roles)) return r.roles.includes('admin');
+      if (typeof r.role === 'string') return r.role === 'admin';
+      return false;
+    });
+    if (isAdminAnywhere) return true;
+    // org-admin for selected org
+    return u.roles.some((r: any) => {
+      if (!r) return false;
+      const orgMatch = (r.organizationId && String(r.organizationId) === String(sel)) || (r.organization && r.organization.id && String(r.organization.id) === String(sel));
+      if (!orgMatch) return false;
+      if (Array.isArray(r.roles)) return r.roles.includes('org-admin') || r.roles.includes('admin');
+      if (typeof r.role === 'string') return r.role === 'org-admin' || r.role === 'admin';
+      return false;
+    });
+  }
+
   openModal(user: any = null) {
     this.editUser = user;
     this.showModal = true;
   }
 
   loadUsers() {
-    if (this.orgId) {
-      this.usersService.getUsersByOrg(this.orgId).subscribe((res: any) => this.users = res || []);
+    const orgToUse = this.orgId ?? localStorage.getItem('selected_org_id');
+    if (orgToUse) {
+      this.usersService.getUsersByOrg(orgToUse).subscribe((res: any) => this.users = res || []);
     } else {
       this.usersService.getUsers().subscribe((res: any) => this.users = res || []);
     }

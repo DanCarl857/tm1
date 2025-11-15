@@ -44,7 +44,7 @@ export class UsersService {
     };
   }
   
-  async createUser(actorEmail: string, dto: { email: string; password: string; name: string, orgId?: string; role?: string }) {
+  async createUser(actorEmail: string, dto: { email: string; password: string; name: string, orgId?: string; role?: string; roles?: string[] }) {
     const exists = await this.userRepo.findOne({ where: { email: dto.email } });
     if (exists) throw new ConflictException('User with this email already exists');
 
@@ -52,22 +52,45 @@ export class UsersService {
     const user = this.userRepo.create({ email: dto.email, password: hashedPassword, name: dto.name });
     const savedUser = await this.userRepo.save(user);
 
-    if (dto.orgId && dto.role) {
-      const actorIsGlobal = this.isGlobalAdmin(actorEmail);
+    // Support multiple role assignments on create. Backwards-compatible with single orgId+role.
+    const actorIsGlobal = this.isGlobalAdmin(actorEmail);
+
+    const assignRoleFor = async (orgId: string, role: string) => {
+      // permission check per-organization
       if (!actorIsGlobal) {
         const actorUser = await this.userRepo.findOne({ where: { email: actorEmail }, relations: ['orgRoles', 'orgRoles.organization'] });
-        const hasAdminRole = actorUser?.orgRoles.some(r => r.organization?.id === dto.orgId && r.role === 'admin');
+        const hasAdminRole = actorUser?.orgRoles.some(r => r.organization?.id === orgId && r.role === 'admin');
         if (!hasAdminRole) {
           throw new ForbiddenException('Only global admins or organization admins can assign roles');
         }
       }
 
-      const org = await this.orgRepo.findOne({ where: { id: dto.orgId } });
+      const org = await this.orgRepo.findOne({ where: { id: orgId } });
       if (!org) throw new NotFoundException('Organization not found');
 
-      const userRole = this.roleRepo.create({ user: savedUser, organization: org, role: dto.role as any });
+      const userRole = this.roleRepo.create({ user: savedUser, organization: org, role: role as any });
       await this.roleRepo.save(userRole);
-      await this.logsService.record(actorEmail, 'create_user_with_role', `user:${savedUser.id} org:${dto.orgId} role:${dto.role}`);
+      await this.logsService.record(actorEmail, 'create_user_with_role', `user:${savedUser.id} org:${orgId} role:${role}`);
+    };
+
+    if (Array.isArray(dto.roles) && dto.roles.length > 0) {
+      // roles can be either ['orgId:role', ...] or ['role1','role2'] with dto.orgId provided
+      for (const r of dto.roles) {
+        if (!r) continue;
+        if (r.includes(':')) {
+          const parts = r.split(':');
+          const orgId = parts[0];
+          const role = parts.slice(1).join(':');
+          await assignRoleFor(orgId, role);
+        } else if (dto.orgId) {
+          await assignRoleFor(dto.orgId, r);
+        } else {
+          // no org context supplied -> skip
+          continue;
+        }
+      }
+    } else if (dto.orgId && dto.role) {
+      await assignRoleFor(dto.orgId, dto.role);
     } else {
       await this.logsService.record(actorEmail, 'create_user', `user:${savedUser.id}`);
     }

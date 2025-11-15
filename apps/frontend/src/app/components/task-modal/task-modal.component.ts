@@ -1,3 +1,4 @@
+/* eslint-disable @angular-eslint/no-output-native */
 /* eslint-disable @angular-eslint/prefer-inject */
 import { Component, Input, Output, EventEmitter, OnChanges } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -15,7 +16,7 @@ export class TaskModalComponent implements OnChanges {
   @Input() task: any = null;
   @Input() show = false;
   @Input() organizationId: string | null | undefined = null;
-  @Output() closed = new EventEmitter<void>();
+  @Output() close = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
   taskForm: FormGroup;
@@ -60,15 +61,15 @@ export class TaskModalComponent implements OnChanges {
       assignedUsers: this.taskForm.value.assignedUsers
     };
 
-    if (this.task) {
+      if (this.task) {
       this.tasksService.updateTask(this.task.id, payload).subscribe(() => {
         this.saved.emit();
-        this.closed.emit();
+        this.close.emit();
       });
     } else {
       this.tasksService.createTask({ ...payload, organizationId: this.organizationId }).subscribe(() => {
         this.saved.emit();
-        this.closed.emit();
+        this.close.emit();
       });
     }
   }

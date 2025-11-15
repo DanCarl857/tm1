@@ -48,6 +48,38 @@ export class OrgsService {
     return updatedOrg;
   }
 
+  async listOrganizationMembers(actorEmail: string, orgId: string) {
+    const actorIsGlobalAdmin = this.isGlobalAdmin(actorEmail);
+    if (!actorIsGlobalAdmin) {
+      const actorUser = await this.userRepo.findOne({ where: { email: actorEmail } });
+      if (!actorUser) throw new ForbiddenException('Actor not found');
+      const actorRoles = await this.roleRepo.find({ where: { user: { id: actorUser.id }, organization: { id: orgId } } });
+      if (!actorRoles || !actorRoles.some(ar => ar.role === 'admin' || ar.role === 'org-admin')) {
+        throw new ForbiddenException('Insufficient permissions to view members of this organization');
+      }
+    }
+
+    const roles = await this.roleRepo.find({
+      where: { organization: { id: orgId } },
+      relations: ['user'],
+    });
+
+    const membersMap = new Map<string, { id: string; email: string; name: string; roles: Role[] }>();
+    for (const r of roles) {
+      const user = r.user;
+      if (!user) continue;
+      if (!membersMap.has(user.id)) {
+        membersMap.set(user.id, { id: user.id, email: user.email, name: user.name, roles: [] });
+      }
+      const memberEntry = membersMap.get(user.id) as { id: string; email: string; name: string; roles: Role[] };
+      if (!memberEntry.roles.includes(r.role)) {
+        memberEntry.roles.push(r.role);
+      }
+    }
+
+    return Array.from(membersMap.values());
+  }
+
   async listOrganizations(actorEmail: string) {
     if (!this.isGlobalAdmin(actorEmail)) {
       throw new ForbiddenException('Only global admins can list organizations');
@@ -124,11 +156,30 @@ export class OrgsService {
   }
 
   async listOrganizationForUser(userId: string) {
+    // Resolve user to check for global admin by email
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // If the user is the seeded global admin, return all organizations
+    if (this.isGlobalAdmin(user.email)) {
+      return this.orgRepo.find();
+    }
+
+    // Otherwise return only the organizations the user has roles in
     const roles = await this.roleRepo.find({
       where: { user: { id: userId } },
       relations: ['organization'],
     });
-    return roles.map((r) => r.organization);
+
+    const orgs = roles.map((r) => r.organization).filter(Boolean) as Organization[];
+    // Deduplicate organizations by id
+    const uniq = new Map<string, Organization>();
+    for (const o of orgs) {
+      if (o && o.id) uniq.set(o.id, o);
+    }
+    return Array.from(uniq.values());
   }
 
   async getOrganization(orgId: string) {
