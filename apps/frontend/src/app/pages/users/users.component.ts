@@ -54,6 +54,10 @@ export class UsersComponent implements OnInit {
   }
 
   openModal(user: any = null) {
+    // Normalize incoming user object shapes (some endpoints return userId and role)
+    if (user && !user.id && (user as any).userId) {
+      user.id = (user as any).userId;
+    }
     this.editUser = user;
     this.showModal = true;
   }

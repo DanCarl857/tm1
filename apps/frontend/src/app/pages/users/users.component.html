@@ -20,7 +20,12 @@
         <td class="px-4 py-2">{{ u.name }}</td>
         <td class="px-4 py-2">{{ u.email }}</td>
         <td class="px-4 py-2">
-          <span *ngFor="let r of u.roles" class="bg-gray-300 text-gray-800 px-2 py-1 rounded mr-1">{{ r }}</span>
+          <ng-container *ngIf="u.roles && u.roles.length; else singleRole">
+            <span *ngFor="let r of u.roles" class="bg-gray-300 text-gray-800 px-2 py-1 rounded mr-1">{{ r }}</span>
+          </ng-container>
+          <ng-template #singleRole>
+            <span *ngIf="u.role" class="bg-gray-300 text-gray-800 px-2 py-1 rounded mr-1">{{ u.role }}</span>
+          </ng-template>
         </td>
         <td class="px-4 py-2">
           <div class="flex gap-2">

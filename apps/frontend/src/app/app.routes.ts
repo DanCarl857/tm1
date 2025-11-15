@@ -10,7 +10,7 @@ import { SelectOrgComponent } from './pages/select-org/select-org.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'select-org', pathMatch: 'full' },
-  { path: 'dashboard', component: DashboardComponent },
+  { path: 'dashboard', component: DashboardComponent, canActivate: [RoleGuard] },
   { path: 'select-org', component: SelectOrgComponent },
   { path: 'organizations', component: OrganizationsComponent, canActivate: [RoleGuard], data: { roles: ['admin'] } },
   { path: 'users/org/:orgId', component: UsersComponent, canActivate: [RoleGuard], data: { roles: ['admin','org-admin'], orgParam: 'orgId' } },

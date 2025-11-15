@@ -32,13 +32,36 @@ export class UserModalComponent implements OnChanges {
 
   ngOnChanges(): void {
     if (this.user) {
+      // Normalize different user role shapes coming from various endpoints:
+      // - { roles: ['admin','user'] }
+      // - { role: 'user' } (single role when listing org members)
+      // - { orgRoles: [{ organizationId, organizationName, roles: [] }, ...] }
+      let roleValues: string[] = [];
+      if (Array.isArray(this.user.roles)) {
+        roleValues = this.user.roles;
+      } else if (this.user.role) {
+        roleValues = [this.user.role];
+      } else if (Array.isArray(this.user.orgRoles)) {
+        const selectedOrg = localStorage.getItem('selected_org_id');
+        if (selectedOrg) {
+          const match = (this.user.orgRoles || []).find((o: any) => String(o.organizationId) === String(selectedOrg) || (o.organizationId === null && String(o.organizationId) === String(selectedOrg)));
+          if (match && Array.isArray(match.roles)) roleValues = match.roles;
+        }
+        // fallback: flatten all orgRoles into a unique list
+        if (roleValues.length === 0) {
+          const all = new Set<string>();
+          (this.user.orgRoles || []).forEach((o: any) => (o.roles || []).forEach((r: string) => all.add(r)));
+          roleValues = Array.from(all.values());
+        }
+      }
+
       this.userForm.patchValue({
         name: this.user.name,
         email: this.user.email,
-        roles: this.user.roles
+        roles: roleValues
       });
       // when editing, clear password and make it optional
-      this.userForm.get('password')?.setValue('');
+  this.userForm.get('password')?.setValue('');
       this.userForm.get('password')?.clearValidators();
       this.userForm.get('password')?.updateValueAndValidity();
     } else {

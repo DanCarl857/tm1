@@ -127,8 +127,23 @@ export class UsersService {
 
   async updateUser(actorEmail: string, userId: string, dto: { name?: string; email?: string, roles?: string[] }) {
     const actorIsGlobal = this.isGlobalAdmin(actorEmail);
-    if (!actorIsGlobal && actorEmail !== (await this.userRepo.findOne({ where: { id: userId } }))?.email) {
-      throw new ForbiddenException('Only global admins can update other users');
+    const targetUser = await this.userRepo.findOne({ where: { id: userId } });
+    if (!targetUser) throw new NotFoundException('User not found');
+
+    // Allow global admins always. Allow a user to update their own record.
+    // Additionally, allow organization admins to update other users when the update is scoped to their organization(s).
+    if (!actorIsGlobal && actorEmail !== targetUser.email) {
+      // If roles are being updated, check whether the actor has admin in each target org
+      if (dto.roles && dto.roles.length > 0) {
+        const actorUser = await this.userRepo.findOne({ where: { email: actorEmail }, relations: ['orgRoles', 'orgRoles.organization'] });
+        const actorAdminOrgs = (actorUser?.orgRoles || []).filter(r => r.role === 'admin').map(r => r.organization?.id);
+        // Extract orgIds from dto.roles like ['orgId:role']
+        const targetOrgIds = dto.roles.map(r => r.split(':')[0]);
+        const allAllowed = targetOrgIds.every(orgId => actorAdminOrgs.includes(orgId));
+        if (!allAllowed) throw new ForbiddenException('Only global admins or organization admins for the target org(s) can update these users');
+      } else {
+        throw new ForbiddenException('Only global admins can update other users');
+      }
     }
 
   const user = await this.userRepo.findOne({ where: { id: userId }, relations: ['orgRoles', 'orgRoles.organization'] });
@@ -144,13 +159,13 @@ export class UsersService {
         const org = await this.orgRepo.findOne({ where: { id: orgId } });
         if (!org) continue;
 
-        let userRole = user.orgRoles.find(r => r.organization?.id === orgId);
-        if (userRole) {
-          userRole.role = role as any;
-        } else {
-          userRole = this.roleRepo.create({ user, organization: org, role: role as any });
-        }
-        await this.roleRepo.save(userRole);
+        // Check if the user already has this exact role for the organization
+        const alreadyHas = user.orgRoles.some(r => r.organization?.id === orgId && r.role === role);
+        if (alreadyHas) continue;
+
+        // Create a new role entry for this user/org/role. This allows multiple roles per org (e.g. both 'user' and 'org-admin').
+        const newUserRole = this.roleRepo.create({ user, organization: org, role: role as any });
+        await this.roleRepo.save(newUserRole);
       }
     }
 
