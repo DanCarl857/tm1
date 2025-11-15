@@ -1,0 +1,13 @@
+<div class="w-64 h-full bg-gray-800 text-white p-4">
+  <h2 class="text-lg font-bold mb-4">Dashboard</h2>
+  <ul>
+    <li><a routerLink="/" class="block py-2 hover:bg-gray-700">Tasks</a></li>
+    <li *ngIf="auth.user$ | async as user">
+      <a routerLink="/organizations" class="block py-2 hover:bg-gray-700">Organizations</a>
+    </li>
+    <li *ngIf="auth.user$ | async as user">
+      <a routerLink="/users" class="block py-2 hover:bg-gray-700">Users</a>
+    </li>
+    <li><button (click)="auth.logout()" class="mt-4 w-full bg-red-600 p-2 rounded">Logout</button></li>
+  </ul>
+</div>
