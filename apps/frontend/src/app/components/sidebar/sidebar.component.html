@@ -13,7 +13,9 @@
       </li>
 
       <li class="mt-4">
-        <div class="px-3 text-xs text-gray-400 uppercase">Organizations</div>
+        <div class="px-3 text-xs text-gray-400 uppercase">
+          <a routerLink="/organizations" class="sidebar-link">Organizations</a>
+        </div>
         <ul>
           <li *ngFor="let org of organizations" class="flex items-center mb-1">
             <button (click)="selectOrg(org)" class="sidebar-link flex items-center w-full text-left">
