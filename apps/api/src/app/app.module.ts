@@ -28,19 +28,19 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: 'data/sqlite.db',
-      entities: [User, Organization, UserOrganizationRole, Task, Log],
-      synchronize: true,
-    }),
-    TypeOrmModule.forFeature([User, Organization, UserOrganizationRole, Task, Log]),
     JwtModule.register({ secret: process.env.JWT_SECRET || 'dev_jwt_secret', signOptions: { expiresIn: '1d' } }),
     AuthModule,
     UsersModule,
     OrganizationsModule,
     TasksModule,
     LogsModule,
+    TypeOrmModule.forRoot({
+      type: 'sqlite',
+      database: 'data/sqlite.db',
+      entities: [User, Organization, UserOrganizationRole, Task, Log],
+      synchronize: true,
+    }),
+    // TypeOrmModule.forFeature([User, Organization, UserOrganizationRole, Task, Log]),
   ],
   controllers: [AuthController, LogsController, OrgsController, UsersController, TasksController],
   providers: [AuthService, JwtStrategy, JwtAuthGuard, OrgsService, UsersService, TasksService, LogsService],

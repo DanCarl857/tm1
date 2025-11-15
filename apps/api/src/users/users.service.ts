@@ -20,6 +20,22 @@ export class UsersService {
     const seed = process.env.SEED_ADMIN_EMAIL || 'admin@system.com';
     return email === seed;
   }
+
+  private sanitizeUser(user: User) {
+    if (!user) return null;
+    const mappedRoles = user.orgRoles?.map(r => ({
+      organizationId: r.organization?.id,
+      organizationName: r.organization?.name,
+      role: r.role,
+    })) || [];
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      orgRoles: mappedRoles,
+    };
+  }
   
   async createUser(actorEmail: string, dto: { email: string; password: string; name: string, orgId?: string; role?: string }) {
     const exists = await this.userRepo.findOne({ where: { email: dto.email } });
@@ -49,7 +65,18 @@ export class UsersService {
       await this.logsService.record(actorEmail, 'create_user', `user:${savedUser.id}`);
     }
 
-    return savedUser;
+    // Return user with roles (and without password)
+    const userWithRoles = await this.userRepo.findOne({ where: { id: savedUser.id }, relations: ['orgRoles', 'orgRoles.organization'] });
+    return this.sanitizeUser(userWithRoles as User);
+  }
+
+  async listAllUsers(actorEmail: string) {
+    const actorIsGlobal = this.isGlobalAdmin(actorEmail);
+    if (!actorIsGlobal) {
+      throw new ForbiddenException('Only global admins can list all users');
+    }
+    const users = await this.userRepo.find({ relations: ['orgRoles', 'orgRoles.organization'] });
+    return users.map(u => this.sanitizeUser(u));
   }
 
   async updatePassword(actorEmail: string, userId: string, newPassword: string) {
@@ -68,6 +95,40 @@ export class UsersService {
     return { message: 'Password updated successfully' };
   }
 
+  async updateUser(actorEmail: string, userId: string, dto: { name?: string; email?: string, roles?: string[] }) {
+    const actorIsGlobal = this.isGlobalAdmin(actorEmail);
+    if (!actorIsGlobal && actorEmail !== (await this.userRepo.findOne({ where: { id: userId } }))?.email) {
+      throw new ForbiddenException('Only global admins can update other users');
+    }
+
+    const user = await this.userRepo.findOne({ where: { id: userId }, relations: ['orgRoles'] });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (dto.email) user.email = dto.email;
+    if (dto.name) user.name = dto.name;
+    await this.userRepo.save(user);
+
+    if (dto.roles && actorIsGlobal) {
+      for (const roleUpdate of dto.roles) {
+        const [orgId, role] = roleUpdate.split(':');
+        const org = await this.orgRepo.findOne({ where: { id: orgId } });
+        if (!org) continue;
+
+        let userRole = user.orgRoles.find(r => r.organization.id === orgId);
+        if (userRole) {
+          userRole.role = role as any;
+        } else {
+          userRole = this.roleRepo.create({ user, organization: org, role: role as any });
+        }
+        await this.roleRepo.save(userRole);
+      }
+    }
+
+    await this.logsService.record(actorEmail, 'update_user', `user:${userId}`);
+    const userWithRoles = await this.userRepo.findOne({ where: { id: userId }, relations: ['orgRoles', 'orgRoles.organization'] });
+    return this.sanitizeUser(userWithRoles as User);
+  }
+
   async listUsersInOrganization(actorEmail: string, orgId: string) {
     const actorIsGlobal = this.isGlobalAdmin(actorEmail);
     if (!actorIsGlobal) {
@@ -83,9 +144,9 @@ export class UsersService {
   }
 
   async getUserById(userId: string) {
-    const user = await this.userRepo.findOne({ where: { id: userId } });
+    const user = await this.userRepo.findOne({ where: { id: userId }, relations: ['orgRoles', 'orgRoles.organization'] });
     if (!user) throw new NotFoundException('User not found');
-    return user;
+    return this.sanitizeUser(user);
   }
 
   async getUserRoles(userId: string) {
