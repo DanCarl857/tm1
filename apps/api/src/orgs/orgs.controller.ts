@@ -15,6 +15,12 @@ export class OrgsController {
     return created;
   }
 
+  @Get()
+  async list(@Req() req: any) {
+    const actorEmail = req.user.email;
+    return this.orgsService.listOrganizations(actorEmail);
+  }
+
   @Get('me')
   async myOrganizations(@Req() req: any) {
     const userId = req.user?.userId;

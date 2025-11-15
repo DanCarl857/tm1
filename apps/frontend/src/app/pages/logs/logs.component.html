@@ -1,0 +1,24 @@
+<div class="p-4">
+  <h1 class="text-2xl font-bold mb-4">Logs</h1>
+
+  <div *ngIf="loading">Loading logs...</div>
+
+  <table *ngIf="!loading" class="min-w-full table-auto border">
+    <thead>
+      <tr class="bg-gray-200">
+        <th class="px-4 py-2">Time</th>
+        <th class="px-4 py-2">Actor</th>
+        <th class="px-4 py-2">Action</th>
+        <th class="px-4 py-2">Target</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let log of logs" class="border-t">
+        <td class="px-4 py-2">{{ log.createdAt }}</td>
+        <td class="px-4 py-2">{{ log.actorEmail }}</td>
+        <td class="px-4 py-2">{{ log.action }}</td>
+        <td class="px-4 py-2">{{ log.target }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

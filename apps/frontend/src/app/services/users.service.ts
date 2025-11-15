@@ -25,6 +25,6 @@ export class UsersService {
   }
 
   getUsersByOrg(orgId: string) {
-    return this.http.get<any[]>(`${this.api}?orgId=${orgId}`);
+    return this.http.get<any[]>(`${this.api}/org/${orgId}`);
   }
 }

@@ -48,6 +48,13 @@ export class OrgsService {
     return updatedOrg;
   }
 
+  async listOrganizations(actorEmail: string) {
+    if (!this.isGlobalAdmin(actorEmail)) {
+      throw new ForbiddenException('Only global admins can list organizations');
+    }
+    return this.orgRepo.find();
+  }
+
   async deleteOrganization(actorEmail: string, orgId: string) {
     if (!this.isGlobalAdmin(actorEmail)) {
       throw new ForbiddenException('Only global admins can delete organizations');

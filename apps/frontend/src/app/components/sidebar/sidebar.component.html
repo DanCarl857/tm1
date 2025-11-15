@@ -1,15 +1,32 @@
 <div class="w-64 h-full bg-gray-800 text-white p-4">
   <h2 class="text-lg font-bold mb-4">Dashboard</h2>
   <ul>
-    <li><a routerLink="/" class="block py-2 hover:bg-gray-700">Tasks</a></li>
-    <li *ngIf="auth.user$ | async as user">
-      <a routerLink="/organizations" class="block py-2 hover:bg-gray-700">Organizations</a>
+    <li><a routerLink="/dashboard" class="sidebar-link">Dashboard</a></li>
+    <li *ngIf="isAdmin">
+      <a routerLink="/users" class="sidebar-link">Users</a>
     </li>
-    <li *ngIf="auth.user$ | async as user">
-      <a routerLink="/users" class="block py-2 hover:bg-gray-700">Users</a>
+    <li *ngIf="isOrgAdmin && !isAdmin">
+      <div class="px-3 text-xs text-gray-400 uppercase">Users (org-admin)</div>
+      <ul>
+        <li *ngFor="let org of orgsWhereUserIsOrgAdmin">
+          <a [routerLink]="['/users/org', org.id]" class="sidebar-link">{{ org.name }}</a>
+        </li>
+      </ul>
+    </li>
+    <li *ngIf="isAdmin">
+      <a routerLink="/logs" class="sidebar-link">Logs</a>
+    </li>
+
+    <li class="mt-4">
+      <div class="px-3 text-xs text-gray-400 uppercase">Organizations</div>
+      <ul>
+        <li *ngFor="let org of organizations">
+          <a [routerLink]="['/organizations', org.id]" class="sidebar-link">{{ org.name }}</a>
+        </li>
+      </ul>
     </li>
     <li>
-      <button (click)="logout()" class="mt-4 w-fit bg-red-600 p-2 rounded">Logout</button>
+      <button (click)="logout()" class="sidebar-link logout-btn">Logout</button>
     </li>
   </ul>
 </div>

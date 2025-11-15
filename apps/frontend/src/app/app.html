@@ -9,13 +9,11 @@
         <li class="mb-2">
           <a routerLink="/dashboard" class="block px-6 py-2 hover:bg-gray-200 rounded">Dashboard</a>
         </li>
-        <li class="mb-2" *ngIf="auth.user$ | async as user">
-          <a routerLink="/users" *ngIf="user.roles.includes('admin') || user.roles.includes('org-admin')"
-             class="block px-6 py-2 hover:bg-gray-200 rounded">Users</a>
+        <li class="mb-2" *ngIf="isAdmin || isOrgAdmin">
+          <a routerLink="/users" class="block px-6 py-2 hover:bg-gray-200 rounded">Users</a>
         </li>
-        <li class="mb-2" *ngIf="auth.user$ | async as user">
-          <a routerLink="/organizations" *ngIf="user.roles.includes('admin')"
-             class="block px-6 py-2 hover:bg-gray-200 rounded">Organizations</a>
+        <li class="mb-2" *ngIf="isAdmin">
+          <a routerLink="/organizations" class="block px-6 py-2 hover:bg-gray-200 rounded">Organizations</a>
         </li>
         <li class="mb-2">
           <a routerLink="/tasks" class="block px-6 py-2 hover:bg-gray-200 rounded">Tasks</a>
@@ -23,7 +21,7 @@
       </ul>
     </nav>
     <div class="absolute bottom-0 w-full p-6">
-      <button (click)="logout()" class="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+      <button (click)="logout()" class="w-fit bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
         Logout
       </button>
     </div>

@@ -2,6 +2,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
+export interface Organization {
+  id: string;
+  name: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class OrganizationsService {
   private api = 'http://localhost:3000/api/organizations';
@@ -9,7 +14,7 @@ export class OrganizationsService {
   constructor(private http: HttpClient) {}
 
   getOrganizations() {
-    return this.http.get(this.api);
+    return this.http.get<Organization[]>(this.api);
   }
 
   createOrganization(org: any) {

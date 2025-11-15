@@ -2,6 +2,7 @@
 import { Component, OnInit } from '@angular/core';
 import { UsersService } from '../../services/users.service';
 import { AuthService } from '../../services/auth.service';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { UserModalComponent } from '../../components/user-modal/user-modal.component';
 
@@ -14,15 +15,19 @@ import { UserModalComponent } from '../../components/user-modal/user-modal.compo
 export class UsersComponent implements OnInit {
   users: any[] = [];
   user: any;
+  orgId: string | null = null;
 
   showModal = false;
   editUser: any = null;
 
-  constructor(private usersService: UsersService, private auth: AuthService) {}
+  constructor(private usersService: UsersService, private auth: AuthService, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.user = this.auth.user$.value;
-    this.loadUsers();
+    this.route.paramMap.subscribe(params => {
+      this.orgId = params.get('orgId');
+      this.loadUsers();
+    });
   }
 
   openModal(user: any = null) {
@@ -31,7 +36,11 @@ export class UsersComponent implements OnInit {
   }
 
   loadUsers() {
-    this.usersService.getUsers().subscribe((res: any) => this.users = res);
+    if (this.orgId) {
+      this.usersService.getUsersByOrg(this.orgId).subscribe((res: any) => this.users = res || []);
+    } else {
+      this.usersService.getUsers().subscribe((res: any) => this.users = res || []);
+    }
   }
 
   deleteUser(userId: number) {
