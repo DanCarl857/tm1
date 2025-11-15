@@ -44,3 +44,7 @@ Thumbs.db
 .github/instructions/nx.instructions.md
 
 .angular
+
+# Local env files (should not be committed)
+.env
+.env.local
