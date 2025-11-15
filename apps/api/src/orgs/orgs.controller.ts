@@ -39,9 +39,10 @@ export class OrgsController {
   }
 
   @Post(':id/roles')
-  async assignRole(@Req() req: any, @Param('id') id: string, @Body() body: { userEmail: string; role: string }) {
+  async assignRole(@Req() req: any, @Param('id') id: string, @Body() body: { userEmail: string; roles: string[] | string }) {
     const actorEmail = req.user?.email;
-    return this.orgsService.addOrUpdateUserRole(actorEmail, id, body.userEmail, body.role as Role);
+    const roles = Array.isArray(body.roles) ? body.roles : [body.roles];
+    return this.orgsService.addOrUpdateUserRole(actorEmail, body.userEmail, id, roles as Role[]);
   }
 
   @Delete(':id/roles/:userId')

@@ -23,17 +23,24 @@ export class UsersService {
 
   private sanitizeUser(user: User) {
     if (!user) return null;
-    const mappedRoles = user.orgRoles?.map(r => ({
-      organizationId: r.organization?.id,
-      organizationName: r.organization?.name,
-      role: r.role,
-    })) || [];
+    // Aggregate roles by organization so the client sees one entry per org with an array of roles
+    const orgMap = new Map<string, { organizationId: string; organizationName: string; roles: string[] }>();
+    (user.orgRoles || []).forEach(r => {
+      const orgId = r.organization?.id;
+      const orgName = r.organization?.name;
+      if (!orgId) return;
+      if (!orgMap.has(orgId)) {
+        orgMap.set(orgId, { organizationId: orgId, organizationName: orgName || '', roles: [] });
+      }
+      const entry = orgMap.get(orgId) as { organizationId: string; organizationName: string; roles: string[] };
+      if (!entry.roles.includes(r.role)) entry.roles.push(r.role);
+    });
 
     return {
       id: user.id,
       email: user.email,
       name: user.name,
-      orgRoles: mappedRoles,
+      orgRoles: Array.from(orgMap.values()),
     };
   }
   
@@ -48,8 +55,8 @@ export class UsersService {
     if (dto.orgId && dto.role) {
       const actorIsGlobal = this.isGlobalAdmin(actorEmail);
       if (!actorIsGlobal) {
-        const actorUser = await this.userRepo.findOne({ where: { email: actorEmail }, relations: ['orgRoles'] });
-        const hasAdminRole = actorUser?.orgRoles.some(r => r.organization.id === dto.orgId && r.role === 'admin');
+        const actorUser = await this.userRepo.findOne({ where: { email: actorEmail }, relations: ['orgRoles', 'orgRoles.organization'] });
+        const hasAdminRole = actorUser?.orgRoles.some(r => r.organization?.id === dto.orgId && r.role === 'admin');
         if (!hasAdminRole) {
           throw new ForbiddenException('Only global admins or organization admins can assign roles');
         }
@@ -101,7 +108,7 @@ export class UsersService {
       throw new ForbiddenException('Only global admins can update other users');
     }
 
-    const user = await this.userRepo.findOne({ where: { id: userId }, relations: ['orgRoles'] });
+  const user = await this.userRepo.findOne({ where: { id: userId }, relations: ['orgRoles', 'orgRoles.organization'] });
     if (!user) throw new NotFoundException('User not found');
 
     if (dto.email) user.email = dto.email;
@@ -114,7 +121,7 @@ export class UsersService {
         const org = await this.orgRepo.findOne({ where: { id: orgId } });
         if (!org) continue;
 
-        let userRole = user.orgRoles.find(r => r.organization.id === orgId);
+        let userRole = user.orgRoles.find(r => r.organization?.id === orgId);
         if (userRole) {
           userRole.role = role as any;
         } else {
@@ -132,8 +139,8 @@ export class UsersService {
   async listUsersInOrganization(actorEmail: string, orgId: string) {
     const actorIsGlobal = this.isGlobalAdmin(actorEmail);
     if (!actorIsGlobal) {
-      const actorUser = await this.userRepo.findOne({ where: { email: actorEmail }, relations: ['orgRoles'] });
-      const hasAccess = actorUser?.orgRoles.some(r => r.organization.id === orgId);
+        const actorUser = await this.userRepo.findOne({ where: { email: actorEmail }, relations: ['orgRoles', 'orgRoles.organization'] });
+        const hasAccess = actorUser?.orgRoles.some(r => r.organization?.id === orgId);
       if (!hasAccess) {
         throw new ForbiddenException('Not a member of this organization');
       }
@@ -151,7 +158,16 @@ export class UsersService {
 
   async getUserRoles(userId: string) {
     const roles = await this.roleRepo.find({ where: { user: { id: userId } }, relations: ['organization'] });
-    return roles.map(r => ({ organizationId: r.organization.id, organizationName: r.organization.name, role: r.role }));
+    // aggregate roles by organization
+    const orgMap = new Map<string, { organizationId: string; organizationName: string; roles: string[] }>();
+    (roles || []).forEach(r => {
+      const orgId = r.organization?.id;
+      if (!orgId) return;
+      if (!orgMap.has(orgId)) orgMap.set(orgId, { organizationId: orgId, organizationName: r.organization?.name || '', roles: [] });
+      const entry = orgMap.get(orgId) as { organizationId: string; organizationName: string; roles: string[] };
+      if (!entry.roles.includes(r.role)) entry.roles.push(r.role);
+    });
+    return Array.from(orgMap.values());
   }
 
   async deleteUser(actorEmail: string, targetUserId: string) {

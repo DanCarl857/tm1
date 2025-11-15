@@ -7,7 +7,7 @@ export type Role = 'admin' | 'org-admin' | 'user' | 'viewer';
 @Entity()
 export class UserOrganizationRole {
     @PrimaryGeneratedColumn('uuid')
-    id: number;
+    id: string;
 
     @ManyToOne(() => User, (user) => user.orgRoles, { onDelete: 'CASCADE' })
     user: User;

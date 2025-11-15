@@ -26,7 +26,8 @@ export class AuthService {
   }
 
   async validateUser(email: string, password: string) {
-    const user = await this.users.findOne({ where: { email } });
+    // load orgRoles so downstream login can include roles in the token/payload
+    const user = await this.users.findOne({ where: { email }, relations: ['orgRoles', 'orgRoles.organization'] });
     if (!user) throw new UnauthorizedException();
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) throw new UnauthorizedException();
@@ -34,7 +35,19 @@ export class AuthService {
   }
 
   async login(user: User) {
-    const payload = { email: user.email, sub: user.id, roles: user.orgRoles };
+    // aggregate roles by organization for the token and response
+    const orgMap = new Map<string, { organizationId: string; organizationName: string; roles: string[] }>();
+    (user.orgRoles || []).forEach(r => {
+      const orgId = r.organization?.id;
+      const orgName = r.organization?.name;
+      if (!orgId) return;
+      if (!orgMap.has(orgId)) orgMap.set(orgId, { organizationId: orgId, organizationName: orgName || '', roles: [] });
+      const entry = orgMap.get(orgId) as { organizationId: string; organizationName: string; roles: string[] };
+      if (!entry.roles.includes(r.role)) entry.roles.push(r.role);
+    });
+    const aggregatedRoles = Array.from(orgMap.values());
+
+    const payload = { email: user.email, sub: user.id, roles: aggregatedRoles };
     const accessToken = this.jwt.sign(payload);
     return { 
       accessToken,
@@ -42,7 +55,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        roles: user.orgRoles
+        roles: aggregatedRoles
       }
     };
   }

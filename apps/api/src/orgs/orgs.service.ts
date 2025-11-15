@@ -61,34 +61,37 @@ export class OrgsService {
     return { message: 'Organization deleted successfully' };
   }
 
-  async addOrUpdateUserRole(actorEmail: string, targetUserId: string, orgId: string, role: Role) {
-    const valid = ['admin', 'org-admin', 'user', 'viewer'].includes(role);
-    if (!valid) {
-      throw new BadRequestException('Invalid role specified');
+  // Note: controller passes userEmail in the body. Accept email here and resolve to user id.
+  async addOrUpdateUserRole(actorEmail: string, targetUserEmail: string, orgId: string, roles: Role[]) {
+    // validate roles
+    const validRoles = ['admin', 'org-admin', 'user', 'viewer'];
+    for (const r of roles) {
+      if (!validRoles.includes(r)) throw new BadRequestException(`Invalid role specified: ${r}`);
     }
 
     const actorIsGlobalAdmin = this.isGlobalAdmin(actorEmail);
     if (!actorIsGlobalAdmin) {
       const actorUser = await this.userRepo.findOne({ where: { email: actorEmail } });
       if (!actorUser) throw new ForbiddenException('Actor not found');
-      const actorRole = await this.roleRepo.findOne({ where: { user: { id: actorUser.id }, organization: { id: orgId } } });
-      if (!actorRole || (actorRole.role !== 'admin' && actorRole.role !== 'org-admin')) {
+      const actorRoles = await this.roleRepo.find({ where: { user: { id: actorUser.id }, organization: { id: orgId } } });
+      if (!actorRoles || !actorRoles.some(ar => ar.role === 'admin' || ar.role === 'org-admin')) {
         throw new ForbiddenException('Insufficient permissions to assign roles in this organization');
       }
     }
 
-    const targetUser = await this.userRepo.findOne({ where: { id: targetUserId } });
+    const targetUser = await this.userRepo.findOne({ where: { email: targetUserEmail } });
     if (!targetUser) throw new NotFoundException('Target user not found');
 
-    let userRole = await this.roleRepo.findOne({ where: { user: { id: targetUserId }, organization: { id: orgId } } });
-    if (userRole) {
-      userRole.role = role;
-    } else {
-      userRole = this.roleRepo.create({ user: targetUser, organization: { id: orgId } as Organization, role });
+    // remove existing roles for this user-org (we'll replace them)
+    const existing = await this.roleRepo.find({ where: { user: { id: targetUser.id }, organization: { id: orgId } } });
+    if (existing.length) {
+      await this.roleRepo.remove(existing);
     }
 
-    const saved = await this.roleRepo.save(userRole);
-    await this.logsService.record(actorEmail, 'assign_role', `user:${targetUserId} org:${orgId} role:${role}`);
+    // create new role rows for each requested role
+    const toCreate: UserOrganizationRole[] = roles.map(r => this.roleRepo.create({ user: targetUser, organization: { id: orgId } as Organization, role: r }));
+    const saved = await this.roleRepo.save(toCreate);
+    await this.logsService.record(actorEmail, 'assign_role', `user:${targetUser.id} org:${orgId} roles:${roles.join(',')}`);
     return saved;
   }
 
@@ -97,18 +100,18 @@ export class OrgsService {
     if (!actorIsGlobalAdmin) {
       const actorUser = await this.userRepo.findOne({ where: { email: actorEmail } });
       if (!actorUser) throw new ForbiddenException('Actor not found');
-      const actorRole = await this.roleRepo.findOne({ where: { user: { id: actorUser.id }, organization: { id: orgId } } });
-      if (!actorRole || (actorRole.role !== 'admin' && actorRole.role !== 'org-admin')) {
+      const actorRoles = await this.roleRepo.find({ where: { user: { id: actorUser.id }, organization: { id: orgId } } });
+      if (!actorRoles || !actorRoles.some(ar => ar.role === 'admin' || ar.role === 'org-admin')) {
         throw new ForbiddenException('Insufficient permissions to remove roles in this organization');
       }
     }
 
-    const userRole = await this.roleRepo.findOne({ where: { user: { id: targetUserId }, organization: { id: orgId } } });
-    if (!userRole) {
+    const userRoles = await this.roleRepo.find({ where: { user: { id: targetUserId }, organization: { id: orgId } } });
+    if (!userRoles || userRoles.length === 0) {
       throw new NotFoundException('User role not found in the specified organization');
     }
 
-    await this.roleRepo.remove(userRole);
+    await this.roleRepo.remove(userRoles);
     await this.logsService.record(actorEmail, 'remove_role', `user:${targetUserId} org:${orgId}`);
     return { message: 'User role removed successfully' };
   }
@@ -130,8 +133,8 @@ export class OrgsService {
   }
 
   async userHasRoleInOrg(userId: string, orgId: string, roles: Role[]) {
-    const uor = await this.roleRepo.findOne({ where: { user: { id: userId }, organization: { id: orgId } }});
-    if (!uor) return false;
-    return roles.includes(uor.role);
+    const uors = await this.roleRepo.find({ where: { user: { id: userId }, organization: { id: orgId } } });
+    if (!uors || uors.length === 0) return false;
+    return uors.some(u => roles.includes(u.role));
   }
 }
