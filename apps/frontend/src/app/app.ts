@@ -2,8 +2,12 @@
 import { Router, RouterModule } from '@angular/router';
 import { Component } from '@angular/core';
 import { AuthService } from './services/auth.service';
+import { CommonModule } from '@angular/common';
 @Component({
-  imports: [RouterModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+  ],
   selector: 'app-root',
   templateUrl: './app.html',
   styleUrls: ['./app.css']

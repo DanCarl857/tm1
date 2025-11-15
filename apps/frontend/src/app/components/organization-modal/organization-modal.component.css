@@ -1,0 +1,4 @@
+/* organization modal styles (minimal) */
+.modal { }
+.form-row { margin-bottom: 1rem; }
+.button-row { display: flex; justify-content: flex-end; gap: 0.5rem; }

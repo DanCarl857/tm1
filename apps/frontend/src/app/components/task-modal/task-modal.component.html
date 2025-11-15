@@ -1,0 +1,36 @@
+<div *ngIf="show" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded shadow-lg w-96 p-6 max-h-[90vh] overflow-auto">
+    <h2 class="text-xl font-bold mb-4">{{ task ? 'Edit Task' : 'Add Task' }}</h2>
+    <form [formGroup]="taskForm" (ngSubmit)="save()">
+      <div class="mb-4">
+        <label for="task-title" class="block mb-1">Title</label>
+        <input id="task-title" type="text" formControlName="title" class="w-full border px-3 py-2 rounded"/>
+      </div>
+
+      <div class="mb-4">
+        <label for="task-description" class="block mb-1">Description</label>
+        <textarea id="task-description" formControlName="description" class="w-full border px-3 py-2 rounded"></textarea>
+      </div>
+
+      <div class="mb-4">
+        <label for="assignedUsers" class="block mb-1">Assign Users</label>
+        <select id="assignedUsers" formControlName="assignedUsers" multiple class="w-full border px-3 py-2 rounded">
+          <option *ngFor="let u of usersInOrg" [value]="u.id">{{ u.name }} ({{ u.roles.join(', ') }})</option>
+        </select>
+      </div>
+
+      <div class="mb-4">
+        <label for="status" class="block mb-1">Status</label>
+        <select id="status" formControlName="status" class="w-full border px-3 py-2 rounded">
+          <option value="pending">Pending</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+
+      <div class="flex justify-end space-x-2">
+        <button type="button" (click)="closed.emit()" class="px-4 py-2 rounded border">Cancel</button>
+        <button type="submit" class="px-4 py-2 rounded bg-blue-500 text-white">{{ task ? 'Save' : 'Add' }}</button>
+      </div>
+    </form>
+  </div>
+</div>

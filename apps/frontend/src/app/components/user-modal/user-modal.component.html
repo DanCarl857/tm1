@@ -1,0 +1,28 @@
+<div *ngIf="show" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded shadow-lg w-96 p-6">
+    <h2 class="text-xl font-bold mb-4">{{ user ? 'Edit User' : 'Add User' }}</h2>
+    <form [formGroup]="userForm" (ngSubmit)="save()">
+      <div class="mb-4">
+        <label for="name" class="block mb-1">Name</label>
+        <input id="name" type="text" formControlName="name" class="w-full border px-3 py-2 rounded"/>
+      </div>
+
+      <div class="mb-4">
+        <label for="email" class="block mb-1">Email</label>
+        <input id="email" type="email" formControlName="email" class="w-full border px-3 py-2 rounded"/>
+      </div>
+
+      <div class="mb-4">
+        <label for="roles" class="block mb-1">Roles</label>
+        <select id="roles" multiple formControlName="roles" class="w-full border px-3 py-2 rounded">
+          <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
+        </select>
+      </div>
+
+      <div class="flex justify-end space-x-2">
+        <button type="button" (click)="closed.emit()" class="px-4 py-2 rounded border">Cancel</button>
+        <button type="submit" class="px-4 py-2 rounded bg-blue-500 text-white">{{ user ? 'Save' : 'Add' }}</button>
+      </div>
+    </form>
+  </div>
+</div>

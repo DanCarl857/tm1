@@ -2,9 +2,12 @@
 import { Component, OnInit } from '@angular/core';
 import { UsersService } from '../../services/users.service';
 import { AuthService } from '../../services/auth.service';
+import { CommonModule } from '@angular/common';
+import { UserModalComponent } from '../../components/user-modal/user-modal.component';
 
 @Component({
   selector: 'app-users',
+  imports: [CommonModule, UserModalComponent],
   templateUrl: './users.component.html',
   styleUrls: ['./users.component.css']
 })
@@ -12,11 +15,19 @@ export class UsersComponent implements OnInit {
   users: any[] = [];
   user: any;
 
+  showModal = false;
+  editUser: any = null;
+
   constructor(private usersService: UsersService, private auth: AuthService) {}
 
   ngOnInit(): void {
     this.user = this.auth.user$.value;
     this.loadUsers();
+  }
+
+  openModal(user: any = null) {
+    this.editUser = user;
+    this.showModal = true;
   }
 
   loadUsers() {

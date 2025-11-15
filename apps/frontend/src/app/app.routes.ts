@@ -5,7 +5,7 @@ import { LoginComponent } from './components/login/login.component';
 import { OrganizationsComponent } from './pages/organizations/organizations.component';
 import { UsersComponent } from './pages/users/users.component';
 
-const routes: Routes = [
+export const routes: Routes = [
   { path: '', component: DashboardComponent },
   { path: 'login', redirectTo: '', pathMatch: 'full', component: LoginComponent },
   { path: 'organizations', component: OrganizationsComponent },

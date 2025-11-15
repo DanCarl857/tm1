@@ -23,4 +23,8 @@ export class UsersService {
   deleteUser(id: number) {
     return this.http.delete(`${this.api}/${id}`);
   }
+
+  getUsersByOrg(orgId: string) {
+    return this.http.get<any[]>(`${this.api}?orgId=${orgId}`);
+  }
 }

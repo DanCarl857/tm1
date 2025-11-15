@@ -1,7 +1,8 @@
 <div class="p-4">
   <h1 class="text-2xl font-bold mb-4">Users</h1>
-  <button *ngIf="user?.roles.includes('admin') || user?.roles.includes('org-admin')" 
-          class="bg-green-500 text-white px-4 py-2 rounded mb-4">
+  <button *ngIf="user?.roles.includes('admin') || user?.roles.includes('org-admin')"
+          class="bg-green-500 text-white px-4 py-2 rounded mb-4"
+          (click)="openModal()">
     Add New User
   </button>
 
@@ -31,4 +32,8 @@
       </tr>
     </tbody>
   </table>
+  <app-user-modal [show]="showModal" [user]="editUser"
+                  (close)="showModal=false"
+                  (saved)="loadUsers()">
+  </app-user-modal>
 </div>
