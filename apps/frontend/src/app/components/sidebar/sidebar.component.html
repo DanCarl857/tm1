@@ -8,6 +8,8 @@
     <li *ngIf="auth.user$ | async as user">
       <a routerLink="/users" class="block py-2 hover:bg-gray-700">Users</a>
     </li>
-    <li><button (click)="auth.logout()" class="mt-4 w-full bg-red-600 p-2 rounded">Logout</button></li>
+    <li>
+      <button (click)="logout()" class="mt-4 w-fit bg-red-600 p-2 rounded">Logout</button>
+    </li>
   </ul>
 </div>

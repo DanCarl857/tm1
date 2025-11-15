@@ -11,28 +11,39 @@
           name="email"
           [(ngModel)]="email"
           required
+          #emailField="ngModel"
           class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+        <div *ngIf="emailField.invalid && emailField.touched" class="text-red-500 text-sm mt-1">
+          Please enter a valid email.
+        </div>
       </div>
 
       <div class="mb-4">
         <label for="password" class="block mb-1">Password</label>
         <input
+          id="password"
           type="password"
           name="password"
           [(ngModel)]="password"
           required
+          minlength="4"
+          #passwordField="ngModel"
           class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+        <div *ngIf="passwordField.invalid && passwordField.touched" class="text-red-500 text-sm mt-1">
+          Password is required (min 4 characters).
+        </div>
       </div>
 
       <div *ngIf="error" class="mb-4 text-red-500">{{ error }}</div>
-
       <button
         type="submit"
-        class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        [disabled]="loginForm.invalid || loading"
+        class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
       >
-        Login
+        <span *ngIf="!loading">Login</span>
+        <span *ngIf="loading">Logging in...</span>
       </button>
     </form>
   </div>

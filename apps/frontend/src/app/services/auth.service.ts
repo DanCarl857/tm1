@@ -5,7 +5,7 @@ import { BehaviorSubject, tap } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private api = 'http://localhost:3000/api';
+  private api = 'http://localhost:3000';
   private tokenKey = 'jwt_token';
   user$ = new BehaviorSubject<any>(null);
 

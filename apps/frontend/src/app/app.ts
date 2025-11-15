@@ -1,6 +1,6 @@
 /* eslint-disable @angular-eslint/prefer-inject */
 import { Router, RouterModule } from '@angular/router';
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { AuthService } from './services/auth.service';
 import { CommonModule } from '@angular/common';
 @Component({
@@ -14,8 +14,12 @@ import { CommonModule } from '@angular/common';
 })
 export class AppComponent {
   protected title = 'Task Management';
+  auth = inject(AuthService);
+  router = inject(Router);
 
-  constructor(public auth: AuthService, private router: Router) {}
+  get isLoginRoute() {
+    return this.router.url === '/' || this.router.url.startsWith('/login');
+  }
 
   logout() {
     this.auth.logout();

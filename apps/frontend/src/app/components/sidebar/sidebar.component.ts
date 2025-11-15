@@ -1,7 +1,8 @@
-/* eslint-disable @angular-eslint/prefer-inject */
-import { Component } from '@angular/core';
+
+import { Component, inject } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-sidebar',
@@ -10,5 +11,11 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./sidebar.component.css']
 })
 export class SidebarComponent {
-  constructor(public auth: AuthService) {}
+  auth = inject(AuthService);
+  router = inject(Router);
+
+  logout() {
+    this.auth.logout();
+    this.router.navigate(['/login']);
+  }
 }

@@ -6,6 +6,7 @@ import { seedAdmin } from './seed-admin';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors();
   await app.init();
 
   const config = new DocumentBuilder()

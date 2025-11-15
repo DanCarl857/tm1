@@ -6,10 +6,11 @@ import { OrganizationsComponent } from './pages/organizations/organizations.comp
 import { UsersComponent } from './pages/users/users.component';
 
 export const routes: Routes = [
-  { path: '', component: DashboardComponent },
-  { path: 'login', redirectTo: '', pathMatch: 'full', component: LoginComponent },
+  { path: '', component: LoginComponent },
+  { path: 'dashboard', component: DashboardComponent },
   { path: 'organizations', component: OrganizationsComponent },
-  { path: 'user', component: UsersComponent },
+  { path: 'users', component: UsersComponent },
+  { path: 'login', component: LoginComponent },
 ];
 
 @NgModule({

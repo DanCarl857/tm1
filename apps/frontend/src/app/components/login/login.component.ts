@@ -15,17 +15,21 @@ export class LoginComponent {
   email = '';
   password = '';
   error = '';
-
+  loading = false;
+  
   constructor(private auth: AuthService, private router: Router) {}
-
+  
   onSubmit(form: NgForm) {
     if (!form.valid) return;
-
+    this.loading = true;
+    this.error = '';
     this.auth.login(this.email, this.password).subscribe({
       next: () => {
-        this.router.navigate(['/']); // Redirect to dashboard
+        this.loading = false;
+        this.router.navigate(['/dashboard']); // Redirect to dashboard
       },
       error: (err) => {
+        this.loading = false;
         this.error = err.error?.message || 'Login failed';
       }
     });

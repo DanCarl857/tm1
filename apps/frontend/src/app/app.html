@@ -1,13 +1,13 @@
 <div class="flex h-screen bg-gray-100">
-  <!-- Sidebar -->
-  <aside class="w-64 bg-white shadow-md">
+  <!-- Sidebar: only show if not on login route -->
+  <aside class="w-64 bg-white shadow-md" *ngIf="!isLoginRoute">
     <div class="p-6">
       <h1 class="text-xl font-bold">{{ title }}</h1>
     </div>
     <nav class="mt-6">
       <ul>
         <li class="mb-2">
-          <a routerLink="/" class="block px-6 py-2 hover:bg-gray-200 rounded">Dashboard</a>
+          <a routerLink="/dashboard" class="block px-6 py-2 hover:bg-gray-200 rounded">Dashboard</a>
         </li>
         <li class="mb-2" *ngIf="auth.user$ | async as user">
           <a routerLink="/users" *ngIf="user.roles.includes('admin') || user.roles.includes('org-admin')"
