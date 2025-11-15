@@ -43,14 +43,25 @@ export class TaskModalComponent implements OnChanges {
       this.taskForm.reset({ status: 'pending', assignedUsers: [] });
     }
 
-    if (this.organizationId) {
+    // Determine effective organization id: prefer input, fallback to selected_org_id in localStorage
+    const effectiveOrgId = this.organizationId ?? localStorage.getItem('selected_org_id');
+    if (effectiveOrgId) {
+      this.organizationId = effectiveOrgId;
       this.loadUsers();
     }
   }
 
   loadUsers() {
     // organizationId is checked before calling loadUsers in ngOnChanges, so assert non-null here
-    this.usersService.getUsersByOrg(this.organizationId!).subscribe(res => this.usersInOrg = res);
+    this.usersService.getUsersByOrg(this.organizationId!).subscribe(res => {
+      // Normalize returned member objects to { id, name, email, role }
+      this.usersInOrg = (res || []).map((u: any) => ({
+        id: u.userId ?? u.id,
+        name: u.name,
+        email: u.email ?? u.userEmail ?? '',
+        role: u.role ?? (Array.isArray(u.roles) ? u.roles.join(', ') : '')
+      }));
+    });
   }
 
   save() {
@@ -67,7 +78,8 @@ export class TaskModalComponent implements OnChanges {
         this.close.emit();
       });
     } else {
-      this.tasksService.createTask({ ...payload, organizationId: this.organizationId }).subscribe(() => {
+      const orgId = this.organizationId ?? localStorage.getItem('selected_org_id');
+      this.tasksService.createTask({ ...payload, organizationId: orgId }).subscribe(() => {
         this.saved.emit();
         this.close.emit();
       });

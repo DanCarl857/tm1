@@ -1,31 +1,6 @@
 <div class="flex h-screen bg-gray-100">
-  <!-- Sidebar: only show if not on login route -->
-  <aside class="w-64 bg-white shadow-md" *ngIf="!isLoginRoute">
-    <div class="p-6">
-      <h1 class="text-xl font-bold">{{ title }}</h1>
-    </div>
-    <nav class="mt-6">
-      <ul>
-        <li class="mb-2">
-          <a routerLink="/dashboard" class="block px-6 py-2 hover:bg-gray-200 rounded">Dashboard</a>
-        </li>
-        <li class="mb-2" *ngIf="isAdmin || isOrgAdmin">
-          <a routerLink="/users" class="block px-6 py-2 hover:bg-gray-200 rounded">Users</a>
-        </li>
-        <li class="mb-2" *ngIf="isAdmin">
-          <a routerLink="/organizations" class="block px-6 py-2 hover:bg-gray-200 rounded">Organizations</a>
-        </li>
-        <li class="mb-2">
-          <a routerLink="/tasks" class="block px-6 py-2 hover:bg-gray-200 rounded">Tasks</a>
-        </li>
-      </ul>
-    </nav>
-    <div class="absolute bottom-0 w-full p-6">
-      <button (click)="logout()" class="w-fit bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-        Logout
-      </button>
-    </div>
-  </aside>
+  <!-- Use the shared sidebar component (shows Logs/Users based on roles) -->
+  <app-sidebar *ngIf="!isLoginRoute"></app-sidebar>
 
   <!-- Main content -->
   <main class="flex-1 p-6 overflow-auto">

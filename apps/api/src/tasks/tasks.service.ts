@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Task } from '../entities/task.entity';
 import { User } from '../entities/user.entity';
 import { Organization } from '../entities/organization.entity';
@@ -30,7 +30,7 @@ export class TasksService {
 
     const userOrgRole = await this.userOrgRoleRepo.findOne({
       where: { user: { id: actor.id }, organization: { id: orgId } },
-      relations: ['role'],
+      relations: ['user', 'organization'],
     });
 
     return userOrgRole ? userOrgRole.role : null;
@@ -74,8 +74,19 @@ export class TasksService {
 
     const orgIds = userOrgRole.map(uor => uor.organization.id);
 
+    // If actor is a global admin, return all tasks
+    if (this.isGlobalAdmin(actorEmail)) {
+      return this.taskRepo.find({ relations: ['organization', 'assignees', 'createdBy'] });
+    }
+
+    // If user has no organization roles, return empty list
+    if (!orgIds || orgIds.length === 0) {
+      return [];
+    }
+
+    // Otherwise return tasks for organizations the user belongs to
     const tasks = await this.taskRepo.find({
-      where: { organization: { id: Not(orgIds.length > 0 ? '' : 'non-existent-id') } },
+      where: { organization: { id: In(orgIds) } },
       relations: ['organization', 'assignees', 'createdBy'],
     });
 

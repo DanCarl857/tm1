@@ -8,7 +8,7 @@ export class TasksController {
   constructor(private tasksService: TasksService) {}
 
   @Post()
-  async create(@Req() req: any, @Body() body: { title: string; description?: string; organizationId: number; assigneeId?: number }) {
+  async create(@Req() req: any, @Body() body: { title: string; description?: string; organizationId: number; assigneeId?: string; assignedUsers?: string[] }) {
     const actorEmail = req.user?.email;
     const orgId = String(body.organizationId);
 
@@ -17,7 +17,15 @@ export class TasksController {
       description: body.description,
     };
 
-    if (body.assigneeId !== undefined && body.assigneeId !== null) {
+    // translate status -> completed boolean if provided by frontend
+    if ((body as any).status !== undefined) {
+      dto.completed = (body as any).status === 'completed';
+    }
+
+    // Support multiple assigned users from the frontend (assignedUsers) or legacy single assigneeId
+    if (Array.isArray(body.assignedUsers) && body.assignedUsers.length > 0) {
+      dto.assignees = body.assignedUsers.map(id => ({ id }));
+    } else if (body.assigneeId !== undefined && body.assigneeId !== null) {
       dto.assignees = [{ id: body.assigneeId }];
     }
 

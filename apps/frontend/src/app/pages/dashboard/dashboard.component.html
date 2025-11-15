@@ -1,11 +1,20 @@
 <div class="p-4">
-  <h1 class="text-2xl font-bold mb-4">Tasks</h1>
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold">Tasks</h1>
+    <button *ngIf="canCreateTask()"
+            (click)="openModal()"
+            class="bg-green-500 text-white px-4 py-2 rounded">
+      Add Task
+    </button>
+  </div>
+  <div *ngIf="topMessage" class="mb-4 p-2 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded">{{ topMessage }}</div>
 
   <table class="min-w-full table-auto border">
     <thead>
       <tr class="bg-gray-200">
   <th class="px-4 py-2 text-left">Title</th>
   <th class="px-4 py-2 text-left">Description</th>
+  <th class="px-4 py-2 text-left">Assigned Users</th>
   <th class="px-4 py-2 text-left">Completed</th>
   <th class="px-4 py-2 text-left">Actions</th>
       </tr>
@@ -14,16 +23,43 @@
       <tr *ngFor="let task of tasks" class="border-t">
         <td class="px-4 py-2">{{ task.title }}</td>
         <td class="px-4 py-2">{{ task.description }}</td>
+        <td class="px-4 py-2">
+          <div class="flex items-center flex-wrap">
+            <span *ngFor="let u of task.assignees" class="bg-gray-300 px-2 py-1 rounded mr-1 flex items-center">
+              {{ u.name }} &lt;{{ u.email }}&gt;
+              <button *ngIf="canCreateTask()" (click)="removeAssignee(task, u.id)" class="ml-2 text-red-600 hover:text-red-800" title="Remove assignee" aria-label="Remove assignee">&times;</button>
+            </span>
+            <div *ngIf="canCreateTask()" class="ml-2">
+              <button (click)="showAddSelector[task.id] = !showAddSelector[task.id]" class="bg-white border rounded px-2 py-1">+</button>
+              <select *ngIf="showAddSelector[task.id]" (change)="addAssignee(task, $any($event.target).value)" class="ml-2 border px-2 py-1 rounded">
+                <option value="">-- add assignee --</option>
+                <option *ngFor="let m of orgMembers" [value]="m.id" [disabled]="isMemberAssigned(task, m.id)">{{ m.name }} &lt;{{ m.email }}&gt;</option>
+              </select>
+            </div>
+          </div>
+        </td>
         <td class="px-4 py-2">{{ task.completed ? 'Yes' : 'No' }}</td>
         <td class="px-4 py-2">
-          <button *ngIf="user?.roles.includes('admin')" (click)="deleteTask(task)" class="bg-red-500 text-white px-2 py-1 mr-2 rounded" aria-label="Delete task" title="Delete">
+          <button *ngIf="canCreateTask()" (click)="deleteTask(task)" class="bg-red-500 text-white px-2 py-1 mr-2 rounded" aria-label="Delete task" title="Delete">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862A2 2 0 0 1 5.995 19.142L5 7m5 4v6m4-6v6M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
             </svg>
           </button>
-          <button *ngIf="user?.roles.includes('user') || user?.roles.includes('admin')" (click)="markComplete(task)" class="bg-blue-500 text-white px-2 py-1 rounded">Complete</button>
+          <button *ngIf="canCreateTask() || isAssignedTo(task)" (click)="markComplete(task)"
+                  [ngClass]="task.completed || task.status === 'completed' ? 'bg-gray-400 text-white px-2 py-1 rounded' : 'bg-blue-500 text-white px-2 py-1 rounded'"
+                  aria-label="Toggle complete" [title]="task.completed || task.status === 'completed' ? 'Mark as pending' : 'Complete'">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
         </td>
       </tr>
     </tbody>
   </table>
+  <app-task-modal 
+    [show]="showModal" 
+    [task]="editTask"
+    (close)="showModal=false"
+    (saved)="loadTasks()">
+  </app-task-modal>
 </div>

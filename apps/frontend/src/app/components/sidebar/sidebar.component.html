@@ -1,31 +1,37 @@
-<div class="w-64 h-full bg-gray-800 text-white p-4">
-  <h2 class="text-lg font-bold mb-4">Dashboard</h2>
-  <ul>
-    <li><a routerLink="/dashboard" class="sidebar-link">Dashboard</a></li>
-    <!-- Show Users when user is admin/org-admin for the selected organization -->
-    <li *ngIf="selectedOrgId && (isAdminForSelectedOrg || isOrgAdminForSelectedOrg)">
-      <a [routerLink]="['/users/org', selectedOrgId]" class="sidebar-link">Users</a>
-    </li>
-    <!-- <li *ngIf="selectedOrgId">
-      <a routerLink="/tasks" class="sidebar-link">Tasks</a>
-    </li> -->
-    <li *ngIf="selectedOrgId && (isAdminForSelectedOrg || isOrgAdminForSelectedOrg)">
-      <a routerLink="/logs" class="sidebar-link">Logs</a>
-    </li>
+<div class="w-64 h-full bg-gray-800 text-white p-4 flex flex-col">
+  <div>
+  <h2 class="text-lg font-bold mb-4">{{ auth.selectedOrg$.value?.name || 'Dashboard' }}</h2>
+    <ul>
+      <li><a routerLink="/dashboard" class="sidebar-link">Dashboard</a></li>
+      <!-- Show Users when user is admin/org-admin for the selected organization -->
+      <li *ngIf="selectedOrgId && (isAdminForSelectedOrg || isOrgAdminForSelectedOrg)">
+        <a [routerLink]="['/users/org', selectedOrgId]" class="sidebar-link">Users</a>
+      </li>
+      <!-- Logs should be visible to admins/org-admins even when no org is selected (global admins) -->
+      <li *ngIf="isAdminForSelectedOrg || isOrgAdminForSelectedOrg">
+        <a routerLink="/logs" class="sidebar-link">Logs</a>
+      </li>
 
-    <li class="mt-4">
-      <div class="px-3 text-xs text-gray-400 uppercase">Organizations</div>
-      <ul>
-        <li *ngFor="let org of organizations">
-          <a [routerLink]="['/organizations', org.id]" class="sidebar-link">{{ org.name }}</a>
-        </li>
-      </ul>
-    </li>
-    <li *ngIf="selectedOrgId" class="mt-4">
-      <button (click)="changeOrg()" class="sidebar-link">Change organization</button>
-    </li>
-    <li>
-      <button (click)="logout()" class="sidebar-link logout-btn">Logout</button>
-    </li>
-  </ul>
+      <li class="mt-4">
+        <div class="px-3 text-xs text-gray-400 uppercase">Organizations</div>
+        <ul>
+          <li *ngFor="let org of organizations" class="flex items-center mb-1">
+            <button (click)="selectOrg(org)" class="sidebar-link flex items-center w-full text-left">
+              <span *ngIf="isSelectedOrg(org)" class="inline-block w-2 h-2 rounded-full bg-green-400 mr-2"></span>
+              <span *ngIf="!isSelectedOrg(org)" class="inline-block w-2 h-2 mr-2"></span>
+              {{ org.name }}
+            </button>
+          </li>
+        </ul>
+      </li>
+
+      <li class="mt-4">
+        <button (click)="changeOrg()" class="sidebar-link">Change organization</button>
+      </li>
+    </ul>
+  </div>
+
+  <div class="mt-auto">
+    <button (click)="logout()" class="sidebar-link logout-btn">Logout</button>
+  </div>
 </div>

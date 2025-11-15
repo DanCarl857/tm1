@@ -5,16 +5,17 @@ import { LoginComponent } from './components/login/login.component';
 import { OrganizationsComponent } from './pages/organizations/organizations.component';
 import { UsersComponent } from './pages/users/users.component';
 import { LogsComponent } from './pages/logs/logs.component';
+import { RoleGuard } from './guards/role.guard';
 import { SelectOrgComponent } from './pages/select-org/select-org.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'select-org', pathMatch: 'full' },
   { path: 'dashboard', component: DashboardComponent },
   { path: 'select-org', component: SelectOrgComponent },
-  { path: 'organizations', component: OrganizationsComponent },
-  { path: 'users/org/:orgId', component: UsersComponent },
-  { path: 'users', component: UsersComponent },
-  { path: 'logs', component: LogsComponent },
+  { path: 'organizations', component: OrganizationsComponent, canActivate: [RoleGuard], data: { roles: ['admin'] } },
+  { path: 'users/org/:orgId', component: UsersComponent, canActivate: [RoleGuard], data: { roles: ['admin','org-admin'], orgParam: 'orgId' } },
+  { path: 'users', component: UsersComponent, canActivate: [RoleGuard], data: { roles: ['admin'] } },
+  { path: 'logs', component: LogsComponent, canActivate: [RoleGuard], data: { roles: ['admin','org-admin'] } },
   { path: 'login', component: LoginComponent },
 ];
 

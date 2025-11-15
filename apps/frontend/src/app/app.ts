@@ -2,11 +2,13 @@
 import { Router, RouterModule } from '@angular/router';
 import { Component, inject } from '@angular/core';
 import { AuthService, UserRole } from './services/auth.service';
+import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { CommonModule } from '@angular/common';
 @Component({
   imports: [
     CommonModule,
     RouterModule,
+    SidebarComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.html',

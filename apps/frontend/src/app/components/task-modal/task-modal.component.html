@@ -15,7 +15,7 @@
       <div class="mb-4">
         <label for="assignedUsers" class="block mb-1">Assign Users</label>
         <select id="assignedUsers" formControlName="assignedUsers" multiple class="w-full border px-3 py-2 rounded">
-          <option *ngFor="let u of usersInOrg" [value]="u.id">{{ u.name }} ({{ u.roles.join(', ') }})</option>
+            <option *ngFor="let u of usersInOrg" [value]="u.id">{{ u.name }} &lt;{{ u.email }}&gt;</option>
         </select>
       </div>
 

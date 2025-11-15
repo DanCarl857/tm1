@@ -120,4 +120,16 @@ export class SidebarComponent implements OnInit {
     this.auth.setSelectedOrg(null);
     this.router.navigate(['/select-org']);
   }
+
+  selectOrg(org: { id?: string; name?: string }) {
+    if (!org || !org.id) return;
+    try { localStorage.setItem('selected_org_id', String(org.id)); } catch { /* ignore */ }
+    this.auth.setSelectedOrg({ id: String(org.id), name: org.name || '' });
+    this.router.navigate(['/dashboard']);
+  }
+
+  isSelectedOrg(org: { id?: string; name?: string }) {
+    if (!org || org.id === undefined || org.id === null) return false;
+    return String(org.id) === String(this.selectedOrgId);
+  }
 }

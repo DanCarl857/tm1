@@ -16,8 +16,13 @@ export class LoginComponent {
   password = '';
   error = '';
   loading = false;
+  showPassword = false;
   
   constructor(private auth: AuthService, private router: Router) {}
+
+  toggleShowPassword() {
+    this.showPassword = !this.showPassword;
+  }
   
   onSubmit(form: NgForm) {
     if (!form.valid) return;
